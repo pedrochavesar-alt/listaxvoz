@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Lista x Voz</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* --- ESTILOS DE ALTO CONTRASTE PARA CAMPO --- */
         * {
@@ -53,7 +54,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.95);
+            background-color: rgba(0, 0, 0, 0.98);
             z-index: 1000;
             padding: 20px;
             overflow-y: auto;
@@ -103,25 +104,42 @@
             resize: none;
         }
 
-        /* --- ENCABEZADO DINÁMICO EN LA LISTA --- */
+        /* --- CONTENEDOR DE LA HOJA / DOCUMENTO --- */
+        #contenedor-resultado {
+            background-color: #111111;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            padding: 15px;
+            flex-grow: 1;
+            margin-bottom: 20px;
+        }
+
+        /* Bloque imprimible (se fuerza a fondo blanco en el PDF final) */
+        #bloque-imprimible {
+            padding: 10px;
+            color: #FFFFFF;
+        }
+
+        /* Encabezado del documento */
         #header-cliente {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             font-size: 16px;
             line-height: 1.4;
             border-left: 4px solid #7FFF00;
             padding-left: 10px;
-            display: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
         #logo-preview {
-            max-width: 80px;
-            max-height: 80px;
-            display: none;
-            margin-bottom: 10px;
+            max-width: 70px;
+            max-height: 70px;
+            object-fit: contain;
             border-radius: 5px;
+            display: none;
         }
 
-        /* --- FLUJO DE DICTADO --- */
         #indicador-paso {
             font-size: 20px;
             color: #7FFF00;
@@ -138,15 +156,63 @@
             color: #FFFFFF;
             border-bottom: 1px dashed #555555;
             padding-bottom: 5px;
-            display: none;
+            font-weight: bold;
         }
 
-        /* Botón de Micrófono Gigante */
+        /* --- FILAS DE MATERIALES CON BOTÓN BORRAR --- */
+        .item-material {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding: 8px 5px;
+            border-bottom: 1px solid #222222;
+        }
+
+        .item-izq {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        .item-material input[type="checkbox"] {
+            width: 28px;
+            height: 28px;
+            margin-right: 15px;
+            cursor: pointer;
+            accent-color: #7FFF00;
+            flex-shrink: 0;
+        }
+
+        .item-material label {
+            font-size: 20px;
+            color: #FFFFFF;
+            cursor: pointer;
+            word-break: break-word;
+        }
+
+        .item-material input[type="checkbox"]:checked + label {
+            text-decoration: line-through;
+            color: #666666;
+        }
+
+        /* Botón gigante de eliminación (Fácil de tocar con dedos sucios) */
+        .btn-borrar-item {
+            background: none;
+            border: none;
+            color: #FF3B30;
+            font-size: 22px;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        /* --- CONTROLES DE AUDIO GRANDE --- */
         .contenedor-mic {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .btn-mic {
@@ -160,11 +226,6 @@
             align-items: center;
             cursor: pointer;
             box-shadow: 0 0 15px rgba(127, 255, 0, 0.4);
-            transition: transform 0.1s ease;
-        }
-
-        .btn-mic:active {
-            transform: scale(0.9);
         }
 
         .btn-mic.escuchando {
@@ -188,55 +249,17 @@
             100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
         }
 
-        /* --- PANTALLAS DE TEXTO --- */
         #transcripcion-tiempo-real {
-            font-size: 22px;
+            font-size: 20px;
             color: #A0A0A0;
             font-style: italic;
             text-align: center;
-            min-height: 40px;
-            margin-bottom: 20px;
-            padding: 10px;
+            min-height: 45px;
+            margin-bottom: 15px;
+            padding: 5px 10px;
         }
 
-        #contenedor-resultado {
-            background-color: #111111;
-            border: 2px solid #333333;
-            border-radius: 8px;
-            padding: 15px;
-            flex-grow: 1;
-            margin-bottom: 20px;
-        }
-
-        /* Checklist con Dedos Grandes */
-        .item-material {
-            display: flex;
-            align-items: center;
-            margin-bottom: 12px;
-            padding: 8px 0;
-        }
-
-        .item-material input[type="checkbox"] {
-            width: 28px;
-            height: 28px;
-            margin-right: 15px;
-            cursor: pointer;
-            accent-color: #7FFF00;
-        }
-
-        .item-material label {
-            font-size: 20px;
-            color: #FFFFFF;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .item-material input[type="checkbox"]:checked + label {
-            text-decoration: line-through;
-            color: #666666;
-        }
-
-        /* --- ACCIONES GIGANTES --- */
+        /* --- BOTONES DE ACCIÓN --- */
         .btn-accion {
             background-color: #7FFF00;
             color: #000000;
@@ -262,25 +285,44 @@
             padding: 12px;
             font-size: 16px;
         }
+
+        /* Estilos específicos que se aplicarán SOLO dentro del documento PDF generado */
+        .pdf-modo {
+            background-color: #FFFFFF !important;
+            color: #000000 !important;
+        }
+        .pdf-modo .item-material {
+            border-bottom: 1px solid #CCCCCC !important;
+        }
+        .pdf-modo label {
+            color: #000000 !important;
+        }
+        .pdf-modo #header-cliente {
+            border-left: 4px solid #000000 !important;
+        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>Lista x Voz</h1>
-        <button class="btn-perfil" onclick="abrirPerfil()" aria-label="Perfil de usuario">👤</button>
+        <button class="btn-perfil" onclick="abrirPerfil()" aria-label="Perfil">👤</button>
     </header>
 
     <div id="indicador-paso">Paso 1: Dictá el Nombre de la Lista</div>
-    <div id="titulo-lista-actual"></div>
 
     <div id="contenedor-resultado">
-        <div id="header-cliente">
-            <img id="logo-preview" src="" alt="Logo">
-            <div id="datos-cliente-texto"></div>
+        <div id="bloque-imprimible">
+            
+            <div id="header-cliente" style="display: none;">
+                <img id="logo-preview" src="" alt="Logo">
+                <div id="datos-cliente-texto"></div>
+            </div>
+
+            <div id="titulo-lista-actual" style="display: none;"></div>
+            
+            <div id="lista-materiales-checklist"></div>
         </div>
-        
-        <div id="lista-materiales-checklist"></div>
     </div>
 
     <div id="transcripcion-tiempo-real">Presioná el micrófono para hablar...</div>
@@ -293,12 +335,12 @@
         </button>
     </div>
 
-    <button id="btn-whatsapp" class="btn-accion" onclick="enviarWhatsApp()" style="display: none;">
-        💬 Enviar a la Ferretería por WhatsApp
+    <button id="btn-pdf" class="btn-accion" onclick="generarPDF()" style="display: none;">
+        📄 Descargar Lista en PDF Profesional
     </button>
 
     <button id="btn-reiniciar" class="btn-accion btn-secundario" onclick="reiniciarFlujo()" style="display: none;">
-        Nueva Lista / Borrar
+        Nueva Lista / Borrar Todo
     </button>
 
     <div id="modal-perfil">
@@ -306,130 +348,120 @@
             <h2>Perfil de Trabajo</h2>
             
             <div class="form-group">
-                <label>Subir Logo:</label>
+                <label>Subir Logo Comercial:</label>
                 <input type="file" id="p-logo" accept="image/*" onchange="procesarLogo(this)">
             </div>
             <div class="form-group">
                 <label>Nombre / Empresa:</label>
-                <input type="text" id="p-nombre" placeholder="Ej: Plomería Juan">
+                <input type="text" id="p-nombre" placeholder="Ej: Electricidad Oeste">
             </div>
             <div class="form-group">
                 <label>📱 Teléfono Celular:</label>
-                <input type="tel" id="p-telefono" placeholder="Ej: 1123456789 (Solo números)">
+                <input type="tel" id="p-telefono" placeholder="Ej: 11 2345-6789">
             </div>
             <div class="form-group">
                 <label>✉️ Mail de contacto:</label>
-                <input type="email" id="p-mail" placeholder="ejemplo@correo.com">
+                <input type="email" id="p-mail" placeholder="contacto@empresa.com">
             </div>
             <div class="form-group">
-                <label>📄 ID Fiscal (CUIT / RUT / etc):</label>
-                <input type="text" id="p-fiscal" placeholder="Ej: CUIT 20-XXXXXXXX-0">
+                <label>📄 ID Fiscal (CUIT / RUT):</label>
+                <input type="text" id="p-fiscal" placeholder="Ej: CUIT 20-33333333-7">
             </div>
             <div class="form-group">
-                <label>📝 Información Adicional (Web, Redes):</label>
-                <textarea id="p-adicional" placeholder="Dirección del taller, redes sociales, etc."></textarea>
+                <label>📝 Información Adicional / Redes:</label>
+                <textarea id="p-adicional" placeholder="Dirección del taller, horarios o sitio web..."></textarea>
             </div>
 
-            <button class="btn-accion" onclick="guardarPerfil()">Guardar Perfil</button>
+            <button class="btn-accion" onclick="guardarPerfil()">Guardar Datos</button>
             <button class="btn-accion btn-secundario" onclick="cerrarPerfil()">Cancelar</button>
         </div>
     </div>
 
     <script>
-        // Variables de estado del flujo
-        let pasoActual = 1; // 1 = Nombre de Lista, 2 = Materiales, 3 = Terminada
+        let pasoActual = 1; 
         let nombreLista = "";
         let itemsLista = [];
         let escuchando = false;
+        let acumuladoFrase = ""; // Almacena el texto temporal de forma limpia
 
-        // Configuración de Reconocimiento de Voz Nativo
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let reconocimiento;
         
         if (SpeechRecognition) {
             reconocimiento = new SpeechRecognition();
-            reconocimiento.continuous = true; // Sigue escuchando aunque haya pausas breves
-            reconocimiento.interimResults = true; // Muestra resultados intermedios en tiempo real
-            reconocimiento.lang = 'es-AR'; // Optimizado para español regional
+            reconocimiento.continuous = false; // Corregido: modo ráfaga única para evitar bucles en teléfonos
+            reconocimiento.interimResults = true; 
+            reconocimiento.lang = 'es-AR';
 
             reconocimiento.onresult = (event) => {
-                let textoIntermedio = '';
+                let interimTranscript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        procesarEntradaVoz(event.results[i][0].transcript);
+                        acumuladoFrase = event.results[i][0].transcript;
                     } else {
-                        textoIntermedio += event.results[i][0].transcript;
+                        interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                if (textoIntermedio) {
-                    document.getElementById('transcripcion-tiempo-real').innerText = textoIntermedio;
-                }
+                // Mostrar preview en pantalla sin duplicar en la base de datos de la lista
+                document.getElementById('transcripcion-tiempo-real').innerText = acumuladoFrase || interimTranscript;
             };
 
             reconocimiento.onerror = (event) => {
-                console.error("Error de reconocimiento:", event.error);
-                if (event.error === 'not-allowed') {
-                    alert("Por favor, permití el acceso al micrófono para usar la app.");
-                }
+                console.error("Error Speech:", event.error);
             };
 
             reconocimiento.onend = () => {
-                // Si se corta de golpe pero el flag sigue activo, fuerza el reinicio sin volver a pedir permisos desde cero
+                // Si el usuario no lo cortó manualmente, procesamos lo que capturó al haber una pausa
                 if (escuchando) {
-                    reconocimiento.start();
+                    ejecutarCierreProcesamiento();
                 }
             };
-        } else {
-            alert("Tu navegador o dispositivo móvil no soporta reconocimiento de voz integrado de manera directa.");
         }
 
-        // CONTROL DE FLUJO POR BOTÓN GIGANTE
         function alternarDictado() {
             if (!reconocimiento) return;
 
             if (!escuchando) {
-                // Encender micrófono
                 escuchando = true;
+                acumuladoFrase = "";
                 document.getElementById('btn-grabar').classList.add('escuchando');
-                document.getElementById('transcripcion-tiempo-real').innerText = "Escuchando... hablá ahora.";
-                reconocimiento.start(); // El navegador pedirá permiso la PRIMERA vez únicamente.
+                document.getElementById('transcripcion-tiempo-real').innerText = "Escuchando... Hablá ahora.";
+                reconocimiento.start();
             } else {
-                // Apagar micrófono manualmente y procesar
-                apagarMicrofono();
+                ejecutarCierreProcesamiento();
             }
         }
 
-        function apagarMicrofono() {
+        function ejecutarCierreProcesamiento() {
             escuchando = false;
             document.getElementById('btn-grabar').classList.remove('escuchando');
             if (reconocimiento) {
                 reconocimiento.stop();
             }
-            document.getElementById('transcripcion-tiempo-real').innerText = "Presioná el micrófono para hablar...";
+            
+            setTimeout(() => {
+                procesarTextoFinal(acumuladoFrase);
+                document.getElementById('transcripcion-tiempo-real').innerText = "Presioná el micrófono para hablar...";
+            }, 300);
         }
 
-        function procesarEntradaVoz(texto) {
+        function procesarTextoFinal(texto) {
             texto = texto.trim();
             if (!texto) return;
 
             if (pasoActual === 1) {
-                // Guardamos el título de la lista
                 nombreLista = texto;
-                document.getElementById('titulo-lista-actual').innerText = "📋 " + nombreLista;
+                document.getElementById('titulo-lista-actual').innerText = "📋 LISTA: " + nombreLista.toUpperCase();
                 document.getElementById('titulo-lista-actual').style.display = "block";
                 
-                // Pasamos al paso 2
                 pasoActual = 2;
-                document.getElementById('indicador-paso').innerText = "Paso 2: Dictá los Materiales (De corrido)";
-                apagarMicrofono(); // Le damos un respiro para que el usuario se prepare para los materiales
+                document.getElementById('indicador-paso').innerText = "Paso 2: Dictá los materiales";
             } else if (pasoActual === 2) {
-                // Filtramos palabras de conexión comunes que la gente dice al dictar de corrido
-                // Separamos por comas, conectores ("y", "también") o saltos lógicos
-                let nuevosItems = texto.split(/,|\by\b|\btambién\b|\bcon\b/i);
+                // Separamos de corrido usando pausas lógicas
+                let fragmentos = texto.split(/,|\by\b|\btambién\b|\bcon\b/i);
                 
-                nuevosItems.forEach(item => {
-                    let limpio = item.trim();
-                    // Limpieza básica de letras sueltas y mayúscula inicial
+                fragmentos.forEach(f => {
+                    let limpio = f.trim();
                     if (limpio.length > 1) {
                         limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
                         itemsLista.push(limpio);
@@ -437,19 +469,22 @@
                 });
 
                 renderizarListaChecklist();
-                document.getElementById('btn-whatsapp').style.display = "flex";
+                document.getElementById('btn-pdf').style.display = "flex";
                 document.getElementById('btn-reiniciar').style.display = "flex";
             }
         }
 
-        // RENDERIZADOR DE LA LISTA EN PANTALLA
+        // CONTROL RENDER: DIBUJAR LISTA E INYECTAR BOTÓN DE BORRADO INDIVIDUAL
         function renderizarListaChecklist() {
             const contenedor = document.getElementById('lista-materiales-checklist');
-            contenedor.innerHTML = ""; // Limpiar pantalla previa
+            contenedor.innerHTML = ""; 
 
             itemsLista.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'item-material';
+
+                const divIzq = document.createElement('div');
+                divIzq.className = 'item-izq';
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -459,59 +494,74 @@
                 label.htmlFor = `item-${index}`;
                 label.innerText = item;
 
-                div.appendChild(checkbox);
-                div.appendChild(label);
+                divIzq.appendChild(checkbox);
+                divIzq.appendChild(label);
+
+                // Botón X para eliminar el ítem si se transcribió erróneo
+                const btnBorrar = document.createElement('button');
+                btnBorrar.className = 'btn-borrar-item';
+                btnBorrar.innerHTML = '❌';
+                btnBorrar.onclick = () => eliminarItem(index);
+
+                div.appendChild(divIzq);
+                div.appendChild(btnBorrar);
                 contenedor.appendChild(div);
             });
         }
 
-        // ACCIÓN: COMPARTIR DIRECTO A WHATSAPP
-        function enviarWhatsApp() {
-            // Re-armar el texto limpio para enviar por la API de mensajería
-            let mensaje = "";
-            
-            // Si hay datos de perfil, los sumamos arriba de todo de forma prolija
-            const perfilString = generarTextoPerfil();
-            if (perfilString) {
-                mensaje += perfilString + "\n---------------------\n";
+        function eliminarItem(index) {
+            itemsLista.splice(index, 1);
+            renderizarListaChecklist();
+            if(itemsLista.length === 0) {
+                document.getElementById('btn-pdf').style.display = "none";
             }
-
-            mensaje += `*LISTA DE MATERIALES*\n`;
-            if (nombreLista) {
-                mensaje += `*Destino/Obra:* ${nombreLista}\n\n`;
-            }
-
-            itemsLista.forEach(item => {
-                mensaje += `▢ ${item}\n`;
-            });
-
-            // Codificar texto para URL de WhatsApp Universal
-            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
         }
 
-        // REINICIAR APP PARA OTRA CONSULTA
+        // EXPORTACIÓN DE PDF DE ALTA CALIDAD PROFESIONAL (FONDO BLANCO AUTOMÁTICO)
+        function generarPDF() {
+            const elemento = document.getElementById('bloque-imprimible');
+            
+            // Ocultamos temporalmente los botones de borrado (las X) para que no salgan impresas en el PDF
+            const botonesBorrar = document.querySelectorAll('.btn-borrar-item');
+            botonesBorrar.forEach(btn => btn.style.display = 'none');
+
+            // Cambiamos el bloque a modo PDF (Letras negras, fondo blanco)
+            elemento.classList.add('pdf-modo');
+
+            const opciones = {
+                margin:       15,
+                filename:     `Lista_${nombreLista.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, backgroundColor: '#FFFFFF' },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Ejecutar renderizador y restaurar diseño de pantalla al terminar
+            html2pdf().set(opciones).from(elemento).save().then(() => {
+                elemento.classList.remove('pdf-modo');
+                botonesBorrar.forEach(btn => btn.style.display = 'block');
+            });
+        }
+
         function reiniciarFlujo() {
-            if (confirm("¿Estás seguro de que querés borrar la lista actual para empezar una nueva?")) {
+            if (confirm("¿Querés borrar todo y empezar una nueva lista?")) {
                 pasoActual = 1;
                 nombreLista = "";
                 itemsLista = [];
                 document.getElementById('titulo-lista-actual').style.display = "none";
-                document.getElementById('titulo-lista-actual').innerText = "";
                 document.getElementById('lista-materiales-checklist').innerHTML = "";
-                document.getElementById('btn-whatsapp').style.display = "none";
+                document.getElementById('btn-pdf').style.display = "none";
                 document.getElementById('btn-reiniciar').style.display = "none";
                 document.getElementById('indicador-paso').innerText = "Paso 1: Dictá el Nombre de la Lista";
-                apagarMicrofono();
+                acumuladoFrase = "";
             }
         }
 
-        /* --- CONTROL DE PERFIL DE USUARIO (LOCAL STORAGE) --- */
+        /* --- MANEJO DE PERFIL COMERCIAL (LOCALSTORAGE) --- */
         let logoBase64 = "";
 
         function abrirPerfil() {
             document.getElementById('modal-perfil').style.display = "block";
-            // Cargar datos guardados previamente si existen
             document.getElementById('p-nombre').value = localStorage.getItem('p_nombre') || "";
             document.getElementById('p-telefono').value = localStorage.getItem('p_telefono') || "";
             document.getElementById('p-mail').value = localStorage.getItem('p_mail') || "";
@@ -524,7 +574,6 @@
             document.getElementById('modal-perfil').style.display = "none";
         }
 
-        // Convierte la imagen del logo a un formato de texto almacenable en el celular
         function procesarLogo(input) {
             const file = input.files[0];
             if (file) {
@@ -545,12 +594,10 @@
             if (logoBase64) {
                 localStorage.setItem('p_logo', logoBase64);
             }
-
             cerrarPerfil();
             cargarEncabezadoPerfilEnPantalla();
         }
 
-        // Muestra los datos comerciales en la parte superior del cuadro de la lista si existen
         function cargarEncabezadoPerfilEnPantalla() {
             const nombre = localStorage.getItem('p_nombre');
             const telefono = localStorage.getItem('p_telefono');
@@ -564,7 +611,7 @@
             const imgLogo = document.getElementById('logo-preview');
 
             if (nombre || telefono || mail || fiscal || adicional || logo) {
-                divHeader.style.display = "block";
+                divHeader.style.display = "flex";
                 let HTMLdatos = "";
 
                 if (nombre) HTMLdatos += `<strong>${nombre}</strong><br>`;
@@ -586,22 +633,6 @@
             }
         }
 
-        // Estructura los datos para que salgan prolijos en el mensaje de WhatsApp enviado
-        function generarTextoPerfil() {
-            const nombre = localStorage.getItem('p_nombre');
-            const telefono = localStorage.getItem('p_telefono');
-            const mail = localStorage.getItem('p_mail');
-            const fiscal = localStorage.getItem('p_fiscal');
-            
-            let str = "";
-            if (nombre) str += `*${nombre}*\n`;
-            if (telefono) str += `📱 Tel: ${telefono}\n`;
-            if (mail) str += `✉️ Msg: ${mail}\n`;
-            if (fiscal) str += `📄 ID: ${fiscal}\n`;
-            return str.trim();
-        }
-
-        // Carga inicial al abrir la app
         window.onload = function() {
             cargarEncabezadoPerfilEnPantalla();
         };
