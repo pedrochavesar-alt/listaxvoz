@@ -280,19 +280,22 @@
             font-size: 16px;
         }
 
-        /* --- 📄 MAQUETA GRÁFICA EXCLUSIVA PARA EL PDF IMPRESO --- */
-        #espejo-pdf-oculto {
-            display: none;
+        /* --- 📄 TRUCO TÉCNICO: MAQUETA DE PDF INVISIBLE PARA EL OJO PERO REAL PARA EL MOTOR --- */
+        #espejo-pdf-render {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 700px; /* Ancho fijo para emular una hoja A4 estable */
             background-color: #FFFFFF !important;
             color: #000000 !important;
-            padding: 20px;
+            padding: 30px;
             font-family: Arial, sans-serif;
         }
 
         .pdf-banner-app {
             background-color: #000000;
             color: #FFFFFF;
-            padding: 15px;
+            padding: 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -302,8 +305,9 @@
         }
 
         .pdf-banner-app .marca-txt {
-            font-size: 26px;
+            font-size: 28px;
             font-weight: bold;
+            letter-spacing: 1px;
         }
 
         .pdf-banner-app .marca-txt span {
@@ -320,37 +324,37 @@
         }
 
         .pdf-datos-vendedor {
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 14px;
+            line-height: 1.6;
             color: #333333;
         }
 
         .pdf-logo-comercial {
-            max-width: 80px;
-            max-height: 80px;
+            max-width: 90px;
+            max-height: 90px;
             object-fit: contain;
         }
 
         .pdf-titulo-documento {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
             color: #000000;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-transform: uppercase;
-            border-left: 5px solid #7FFF00;
-            padding-left: 10px;
+            border-left: 6px solid #7FFF00;
+            padding-left: 12px;
         }
 
-        .pdf-tabla-items {
+        .pdf-contenedor-items {
+            display: flex;
+            flex-direction: column;
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
         }
 
         .pdf-fila {
             display: flex;
             align-items: center;
-            padding: 12px 8px;
+            padding: 14px 8px;
             border-bottom: 1px solid #DCDCDC;
         }
 
@@ -361,11 +365,13 @@
             margin-right: 15px;
             border-radius: 3px;
             flex-shrink: 0;
+            background-color: #FFFFFF;
         }
 
         .pdf-texto-item {
-            font-size: 16px;
+            font-size: 18px;
             color: #000000;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -405,10 +411,10 @@
         Nueva Lista / Borrar Todo
     </button>
 
-    <div id="espejo-pdf-oculto">
+    <div id="espejo-pdf-render">
         <div class="pdf-banner-app">
             <div class="marca-txt">LISTA<span>XVOZ</span></div>
-            <div style="font-size: 11px; text-align: right; opacity: 0.8;">Documento de Trabajo</div>
+            <div style="font-size: 12px; text-align: right; opacity: 0.9; font-weight: bold;">Documento Comercial de Trabajo</div>
         </div>
         
         <div class="pdf-bloque-comercial">
@@ -417,7 +423,7 @@
         </div>
 
         <div id="pdf-titulo-lista" class="pdf-titulo-documento"></div>
-        <div id="pdf-contenedor-items"></div>
+        <div id="pdf-contenedor-items" class="pdf-contenedor-items"></div>
     </div>
 
     <div id="modal-perfil">
@@ -575,9 +581,9 @@
             }
         }
 
-        // --- GENERADOR DE PDF ESTRUCTURALMENTE CORREGIDO ---
+        // --- GENERADOR CORREGIDO: SE RENDERIZA EN COORDENADAS NEGATIVAS ACTIVO ---
         function generarPDF() {
-            // 1. Armamos la maqueta limpia e independiente en el bloque oculto
+            // 1. Clonamos la info de la empresa
             const datosEmpresaSrc = document.getElementById('datos-cliente-texto').innerHTML;
             const logoSrc = document.getElementById('logo-preview').src;
             
@@ -591,9 +597,10 @@
                 pdfLogo.style.display = "none";
             }
 
-            document.getElementById('pdf-titulo-lista').innerText = "Lista: " + nombreLista;
+            // 2. Colocamos el título formal
+            document.getElementById('pdf-titulo-lista').innerText = "Lista: " + nombreLista.toUpperCase();
 
-            // 2. Inyectamos los materiales sin arrastrar los botones de borrado (las X)
+            // 3. Volcamos de forma limpia e independiente la lista de materiales completa
             const contenedorItemsPDF = document.getElementById('pdf-contenedor-items');
             contenedorItemsPDF.innerHTML = "";
 
@@ -613,9 +620,8 @@
                 contenedorItemsPDF.appendChild(fila);
             });
 
-            // 3. Apuntamos la librería al bloque espejo e imprimimos de forma segura
-            const elementoPDF = document.getElementById('espejo-pdf-oculto');
-            elementoPDF.style.display = "block"; // Encendido veloz para la captura del motor
+            // 4. Ejecutamos html2pdf apuntando a la zona de coordenadas invisibles
+            const elementoPDF = document.getElementById('espejo-pdf-render');
 
             const opciones = {
                 margin:       15,
@@ -625,9 +631,8 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            html2pdf().set(opciones).from(elementoPDF).save().then(() => {
-                elementoPDF.style.display = "none"; // Volvemos a ocultar el bloque espejo comercial
-            });
+            // Compila perfectamente y directo sin alterar la visual del usuario
+            html2pdf().set(opciones).from(elementoPDF).save();
         }
 
         function reiniciarFlujo() {
@@ -673,52 +678,4 @@
         }
 
         function guardarPerfil() {
-            localStorage.setItem('p_nombre', document.getElementById('p-nombre').value.trim());
-            localStorage.setItem('p_telefono', document.getElementById('p-telefono').value.trim());
-            localStorage.setItem('p_mail', document.getElementById('p-mail').value.trim());
-            localStorage.setItem('p_fiscal', document.getElementById('p-fiscal').value.trim());
-            localStorage.setItem('p_adicional', document.getElementById('p-adicional').value.trim());
-            if (logoBase64) localStorage.setItem('p_logo', logoBase64);
-            cerrarPerfil();
-            cargarEncabezadoPerfilEnPantalla();
-        }
-
-        function cargarEncabezadoPerfilEnPantalla() {
-            const nombre = localStorage.getItem('p_nombre');
-            const telefono = localStorage.getItem('p_telefono');
-            const mail = localStorage.getItem('p_mail');
-            const fiscal = localStorage.getItem('p_fiscal');
-            const adicional = localStorage.getItem('p_adicional');
-            const logo = localStorage.getItem('p_logo');
-
-            const divHeader = document.getElementById('header-cliente');
-            const divTexto = document.getElementById('datos-cliente-texto');
-            const imgLogo = document.getElementById('logo-preview');
-
-            if (nombre || telefono || mail || fiscal || adicional || logo) {
-                divHeader.style.display = "flex";
-                let HTMLdatos = "";
-                if (nombre) HTMLdatos += `<strong>${nombre}</strong><br>`;
-                if (telefono) HTMLdatos += `Tel: ${telefono}<br>`;
-                if (mail) HTMLdatos += `Msg: ${mail}<br>`;
-                if (fiscal) HTMLdatos += `${fiscal}<br>`;
-                if (adicional) HTMLdatos += `<small>${adicional}</small>`;
-                divTexto.innerHTML = HTMLdatos;
-
-                if (logo) {
-                    imgLogo.src = logo;
-                    imgLogo.style.display = "block";
-                } else {
-                    imgLogo.style.display = "none";
-                }
-            } else {
-                divHeader.style.display = "none";
-            }
-        }
-
-        window.onload = function() {
-            cargarEncabezadoPerfilEnPantalla();
-        };
-    </script>
-</body>
-</html>
+            localStorage.setItem('p_nombre',
