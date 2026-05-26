@@ -678,4 +678,52 @@
         }
 
         function guardarPerfil() {
-            localStorage.setItem('p_nombre',
+            localStorage.setItem('p_nombre', document.getElementById('p-nombre').value.trim());
+            localStorage.setItem('p_telefono', document.getElementById('p-telefono').value.trim());
+            localStorage.setItem('p_mail', document.getElementById('p-mail').value.trim());
+            localStorage.setItem('p_fiscal', document.getElementById('p-fiscal').value.trim());
+            localStorage.setItem('p_adicional', document.getElementById('p-adicional').value.trim());
+            if (logoBase64) localStorage.setItem('p_logo', logoBase64);
+            cerrarPerfil();
+            cargarEncabezadoPerfil EnPantalla();
+        }
+
+        function cargarEncabezadoPerfilEnPantalla() {
+            const nombre = localStorage.getItem('p_nombre');
+            const telefono = localStorage.getItem('p_telefono');
+            const mail = localStorage.getItem('p_mail');
+            const fiscal = localStorage.getItem('p_fiscal');
+            const adicional = localStorage.getItem('p_adicional');
+            const logo = localStorage.getItem('p_logo');
+
+            const divHeader = document.getElementById('header-cliente');
+            const divTexto = document.getElementById('datos-cliente-texto');
+            const imgLogo = document.getElementById('logo-preview');
+
+            if (nombre || telefono || mail || fiscal || adicional || logo) {
+                divHeader.style.display = "flex";
+                let HTMLdatos = "";
+                if (nombre) HTMLdatos += `<strong>${nombre}</strong><br>`;
+                if (telefono) HTMLdatos += `Tel: ${telefono}<br>`;
+                if (mail) HTMLdatos += `Msg: ${mail}<br>`;
+                if (fiscal) HTMLdatos += `${fiscal}<br>`;
+                if (adicional) HTMLdatos += `<small>${adicional}</small>`;
+                divTexto.innerHTML = HTMLdatos;
+
+                if (logo) {
+                    imgLogo.src = logo;
+                    imgLogo.style.display = "block";
+                } else {
+                    imgLogo.style.display = "none";
+                }
+            } else {
+                divHeader.style.display = "none";
+            }
+        }
+
+        window.onload = function() {
+            cargarEncabezadoPerfilEnPantalla();
+        };
+    </script>
+</body>
+</html>
