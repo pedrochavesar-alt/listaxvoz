@@ -474,4 +474,250 @@
             reconocimiento.interimResults = true; 
             reconocimiento.lang = 'es-AR';
 
-            reconocimiento.onresult
+            reconocimiento.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        acumuladoFrase = event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                document.getElementById('transcripcion-tiempo-real').innerText = acumuladoFrase || interimTranscript;
+            };
+
+            reconocimiento.onend = () => {
+                if (escuchando) ejecutarCierreProcesamiento();
+            };
+        }
+
+        function alternarDictado() {
+            if (!reconocimiento) return;
+            if (!escuchando) {
+                escuchando = true;
+                acumuladoFrase = "";
+                document.getElementById('btn-grabar').classList.add('escuchando');
+                document.getElementById('transcripcion-tiempo-real').innerText = "Escuchando...";
+                reconocimiento.start();
+            } else {
+                ejecutarCierreProcesamiento();
+            }
+        }
+
+        function ejecutarCierreProcesamiento() {
+            escuchando = false;
+            document.getElementById('btn-grabar').classList.remove('escuchando');
+            if (reconocimiento) reconocimiento.stop();
+            
+            setTimeout(() => {
+                procesarTextoFinal(acumuladoFrase);
+                document.getElementById('transcripcion-tiempo-real').innerText = "Presioná el micrófono para hablar...";
+            }, 300);
+        }
+
+        function procesarTextoFinal(texto) {
+            texto = texto.trim();
+            if (!texto) return;
+
+            if (pasoActual === 1) {
+                nombreLista = texto;
+                document.getElementById('titulo-lista-actual').innerText = "📋 LISTA: " + nombreLista.toUpperCase();
+                document.getElementById('titulo-lista-actual').style.display = "block";
+                pasoActual = 2;
+                document.getElementById('indicador-paso').innerText = "Paso 2: Dictá los materiales";
+            } else if (pasoActual === 2) {
+                let fragmentos = texto.split(/,|\by\b|\btambién\b|\bcon\b/i);
+                fragmentos.forEach(f => {
+                    let limpio = f.trim();
+                    if (limpio.length > 1) {
+                        limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
+                        itemsLista.push(limpio);
+                    }
+                });
+                renderizarListaChecklist();
+                document.getElementById('btn-pdf').style.display = "flex";
+                document.getElementById('btn-reiniciar').style.display = "flex";
+            }
+        }
+
+        function renderizarListaChecklist() {
+            const contenedor = document.getElementById('lista-materiales-checklist');
+            contenedor.innerHTML = ""; 
+
+            itemsLista.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'item-material';
+
+                const divIzq = document.createElement('div');
+                divIzq.className = 'item-izq';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `item-${index}`;
+
+                const label = document.createElement('label');
+                label.htmlFor = `item-${index}`;
+                label.innerText = item;
+
+                divIzq.appendChild(checkbox);
+                divIzq.appendChild(label);
+
+                const btnBorrar = document.createElement('button');
+                btnBorrar.className = 'btn-borrar-item';
+                btnBorrar.innerHTML = '❌';
+                btnBorrar.onclick = () => eliminarItem(index);
+
+                div.appendChild(divIzq);
+                div.appendChild(btnBorrar);
+                contenedor.appendChild(div);
+            });
+        }
+
+        function eliminarItem(index) {
+            itemsLista.splice(index, 1);
+            renderizarListaChecklist();
+            if(itemsLista.length === 0) {
+                document.getElementById('btn-pdf').style.display = "none";
+            }
+        }
+
+        function generarPDF() {
+            const datosEmpresaSrc = document.getElementById('datos-cliente-texto').innerHTML;
+            const logoSrc = document.getElementById('logo-preview').src;
+            
+            document.getElementById('pdf-datos-empresa').innerHTML = datosEmpresaSrc || "<strong>Lista de Materiales</strong>";
+            
+            const pdfLogo = document.getElementById('pdf-logo-empresa');
+            if(logoSrc && !logoSrc.endsWith('index.html') && logoSrc.length > 100) {
+                pdfLogo.src = logoSrc;
+                pdfLogo.style.display = "block";
+            } else {
+                pdfLogo.style.display = "none";
+            }
+
+            document.getElementById('pdf-titulo-lista').innerText = "Lista: " + nombreLista.toUpperCase();
+
+            const contenedorItemsPDF = document.getElementById('pdf-contenedor-items');
+            contenedorItemsPDF.innerHTML = "";
+
+            itemsLista.forEach(item => {
+                const fila = document.createElement('div');
+                fila.className = 'pdf-fila';
+                
+                const casillero = document.createElement('div');
+                casillero.className = 'pdf-casillero';
+
+                const texto = document.createElement('div');
+                texto.className = 'pdf-texto-item';
+                texto.innerText = item;
+
+                fila.appendChild(casillero);
+                fila.appendChild(texto);
+                contenedorItemsPDF.appendChild(fila);
+            });
+
+            const elementoPDF = document.getElementById('espejo-pdf-render');
+
+            const opciones = {
+                margin:       15,
+                filename:     `Lista_${nombreLista.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, backgroundColor: '#FFFFFF', useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opciones).from(elementoPDF).save();
+        }
+
+        function reiniciarFlujo() {
+            if (confirm("¿Querés borrar todo y empezar una nueva lista?")) {
+                pasoActual = 1;
+                nombreLista = "";
+                itemsLista = [];
+                document.getElementById('titulo-lista-actual').style.display = "none";
+                document.getElementById('lista-materiales-checklist').innerHTML = "";
+                document.getElementById('btn-pdf').style.display = "none";
+                document.getElementById('btn-reiniciar').style.display = "none";
+                document.getElementById('indicador-paso').innerText = "Paso 1: Dictá el Nombre de la Lista";
+                acumuladoFrase = "";
+            }
+        }
+
+        /* --- LOGICA DE PERFIL (LOCALSTORAGE) --- */
+        let logoBase64 = "";
+
+        function abrirPerfil() {
+            document.getElementById('modal-perfil').style.display = "block";
+            document.getElementById('p-nombre').value = localStorage.getItem('p_nombre') || "";
+            document.getElementById('p-telefono').value = localStorage.getItem('p_telefono') || "";
+            document.getElementById('p-mail').value = localStorage.getItem('p_mail') || "";
+            document.getElementById('p-fiscal').value = localStorage.getItem('p_fiscal') || "";
+            document.getElementById('p-adicional').value = localStorage.getItem('p_adicional') || "";
+            logoBase64 = localStorage.getItem('p_logo') || "";
+        }
+
+        function cerrarPerfil() {
+            document.getElementById('modal-perfil').style.display = "none";
+        }
+
+        function procesarLogo(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    logoBase64 = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function guardarPerfil() {
+            localStorage.setItem('p_nombre', document.getElementById('p-nombre').value.trim());
+            localStorage.setItem('p_telefono', document.getElementById('p-telefono').value.trim());
+            localStorage.setItem('p_mail', document.getElementById('p-mail').value.trim());
+            localStorage.setItem('p_fiscal', document.getElementById('p-fiscal').value.trim());
+            localStorage.setItem('p_adicional', document.getElementById('p-adicional').value.trim());
+            if (logoBase64) localStorage.setItem('p_logo', logoBase64);
+            cerrarPerfil();
+            cargarEncabezadoPerfilEnPantalla();
+        }
+
+        function cargarEncabezadoPerfilEnPantalla() {
+            const nombre = localStorage.getItem('p_nombre');
+            const telefono = localStorage.getItem('p_telefono');
+            const mail = localStorage.getItem('p_mail');
+            const fiscal = localStorage.getItem('p_fiscal');
+            const adicional = localStorage.getItem('p_adicional');
+            const logo = localStorage.getItem('p_logo');
+
+            const divHeader = document.getElementById('header-cliente');
+            const divTexto = document.getElementById('datos-cliente-texto');
+            const imgLogo = document.getElementById('logo-preview');
+
+            if (nombre || telefono || mail || fiscal || adicional || logo) {
+                divHeader.style.display = "flex";
+                let HTMLdatos = "";
+                if (nombre) HTMLdatos += `<strong>${nombre}</strong><br>`;
+                if (telefono) HTMLdatos += `Tel: ${telefono}<br>`;
+                if (mail) HTMLdatos += `Msg: ${mail}<br>`;
+                if (fiscal) HTMLdatos += `${fiscal}<br>`;
+                if (adicional) HTMLdatos += `<small>${adicional}</small>`;
+                divTexto.innerHTML = HTMLdatos;
+
+                if (logo) {
+                    imgLogo.src = logo;
+                    imgLogo.style.display = "block";
+                } else {
+                    imgLogo.style.display = "none";
+                }
+            } else {
+                divHeader.style.display = "none";
+            }
+        }
+
+        window.onload = function() {
+            cargarEncabezadoPerfilEnPantalla();
+        };
+    </script>
+</body>
+</html>
