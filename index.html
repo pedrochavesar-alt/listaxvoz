@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Lista x Voz</title>
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* --- ESTILOS DE ALTO CONTRASTE PARA CAMPO --- */
@@ -104,7 +105,7 @@
             resize: none;
         }
 
-        /* --- CONTENEDOR DE LA HOJA / DOCUMENTO --- */
+        /* --- CONTENEDOR DE LA HOJA EN PANTALLA --- */
         #contenedor-resultado {
             background-color: #111111;
             border: 2px solid #333333;
@@ -114,13 +115,7 @@
             margin-bottom: 20px;
         }
 
-        /* Bloque imprimible (se fuerza a fondo blanco en el PDF final) */
-        #bloque-imprimible {
-            padding: 10px;
-            color: #FFFFFF;
-        }
-
-        /* Encabezado del documento */
+        /* Encabezado del documento en pantalla */
         #header-cliente {
             margin-bottom: 20px;
             font-size: 16px;
@@ -159,7 +154,7 @@
             font-weight: bold;
         }
 
-        /* --- FILAS DE MATERIALES CON BOTÓN BORRAR --- */
+        /* --- FILAS DE MATERIALES --- */
         .item-material {
             display: flex;
             align-items: center;
@@ -196,7 +191,6 @@
             color: #666666;
         }
 
-        /* Botón gigante de eliminación (Fácil de tocar con dedos sucios) */
         .btn-borrar-item {
             background: none;
             border: none;
@@ -207,7 +201,7 @@
             margin-left: 10px;
         }
 
-        /* --- CONTROLES DE AUDIO GRANDE --- */
+        /* --- CONTROLES DE AUDIO --- */
         .contenedor-mic {
             display: flex;
             justify-content: center;
@@ -286,19 +280,92 @@
             font-size: 16px;
         }
 
-        /* Estilos específicos que se aplicarán SOLO dentro del documento PDF generado */
-        .pdf-modo {
+        /* --- 📄 MAQUETA GRÁFICA EXCLUSIVA PARA EL PDF IMPRESO --- */
+        #espejo-pdf-oculto {
+            display: none;
             background-color: #FFFFFF !important;
             color: #000000 !important;
+            padding: 20px;
+            font-family: Arial, sans-serif;
         }
-        .pdf-modo .item-material {
-            border-bottom: 1px solid #CCCCCC !important;
+
+        .pdf-banner-app {
+            background-color: #000000;
+            color: #FFFFFF;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 5px solid #7FFF00;
+            margin-bottom: 25px;
+            border-radius: 4px;
         }
-        .pdf-modo label {
-            color: #000000 !important;
+
+        .pdf-banner-app .marca-txt {
+            font-size: 26px;
+            font-weight: bold;
         }
-        .pdf-modo #header-cliente {
-            border-left: 4px solid #000000 !important;
+
+        .pdf-banner-app .marca-txt span {
+            color: #7FFF00;
+        }
+
+        .pdf-bloque-comercial {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #E5E5E5;
+        }
+
+        .pdf-datos-vendedor {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #333333;
+        }
+
+        .pdf-logo-comercial {
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: contain;
+        }
+
+        .pdf-titulo-documento {
+            font-size: 20px;
+            font-weight: bold;
+            color: #000000;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            border-left: 5px solid #7FFF00;
+            padding-left: 10px;
+        }
+
+        .pdf-tabla-items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .pdf-fila {
+            display: flex;
+            align-items: center;
+            padding: 12px 8px;
+            border-bottom: 1px solid #DCDCDC;
+        }
+
+        .pdf-casillero {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #000000;
+            margin-right: 15px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .pdf-texto-item {
+            font-size: 16px;
+            color: #000000;
         }
     </style>
 </head>
@@ -312,17 +379,12 @@
     <div id="indicador-paso">Paso 1: Dictá el Nombre de la Lista</div>
 
     <div id="contenedor-resultado">
-        <div id="bloque-imprimible">
-            
-            <div id="header-cliente" style="display: none;">
-                <img id="logo-preview" src="" alt="Logo">
-                <div id="datos-cliente-texto"></div>
-            </div>
-
-            <div id="titulo-lista-actual" style="display: none;"></div>
-            
-            <div id="lista-materiales-checklist"></div>
+        <div id="header-cliente" style="display: none;">
+            <img id="logo-preview" src="" alt="Logo">
+            <div id="datos-cliente-texto"></div>
         </div>
+        <div id="titulo-lista-actual" style="display: none;"></div>
+        <div id="lista-materiales-checklist"></div>
     </div>
 
     <div id="transcripcion-tiempo-real">Presioná el micrófono para hablar...</div>
@@ -343,10 +405,24 @@
         Nueva Lista / Borrar Todo
     </button>
 
+    <div id="espejo-pdf-oculto">
+        <div class="pdf-banner-app">
+            <div class="marca-txt">LISTA<span>XVOZ</span></div>
+            <div style="font-size: 11px; text-align: right; opacity: 0.8;">Documento de Trabajo</div>
+        </div>
+        
+        <div class="pdf-bloque-comercial">
+            <div id="pdf-datos-empresa" class="pdf-datos-vendedor"></div>
+            <img id="pdf-logo-empresa" class="pdf-logo-comercial" src="" alt="" style="display: none;">
+        </div>
+
+        <div id="pdf-titulo-lista" class="pdf-titulo-documento"></div>
+        <div id="pdf-contenedor-items"></div>
+    </div>
+
     <div id="modal-perfil">
         <div class="modal-content">
             <h2>Perfil de Trabajo</h2>
-            
             <div class="form-group">
                 <label>Subir Logo Comercial:</label>
                 <input type="file" id="p-logo" accept="image/*" onchange="procesarLogo(this)">
@@ -368,10 +444,9 @@
                 <input type="text" id="p-fiscal" placeholder="Ej: CUIT 20-33333333-7">
             </div>
             <div class="form-group">
-                <label>📝 Información Adicional / Redes:</label>
-                <textarea id="p-adicional" placeholder="Dirección del taller, horarios o sitio web..."></textarea>
+                <label>📝 Información Adicional:</label>
+                <textarea id="p-adicional" placeholder="Dirección del taller, horarios..."></textarea>
             </div>
-
             <button class="btn-accion" onclick="guardarPerfil()">Guardar Datos</button>
             <button class="btn-accion btn-secundario" onclick="cerrarPerfil()">Cancelar</button>
         </div>
@@ -382,14 +457,14 @@
         let nombreLista = "";
         let itemsLista = [];
         let escuchando = false;
-        let acumuladoFrase = ""; // Almacena el texto temporal de forma limpia
+        let acumuladoFrase = "";
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let reconocimiento;
         
         if (SpeechRecognition) {
             reconocimiento = new SpeechRecognition();
-            reconocimiento.continuous = false; // Corregido: modo ráfaga única para evitar bucles en teléfonos
+            reconocimiento.continuous = false; 
             reconocimiento.interimResults = true; 
             reconocimiento.lang = 'es-AR';
 
@@ -402,30 +477,21 @@
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                // Mostrar preview en pantalla sin duplicar en la base de datos de la lista
                 document.getElementById('transcripcion-tiempo-real').innerText = acumuladoFrase || interimTranscript;
             };
 
-            reconocimiento.onerror = (event) => {
-                console.error("Error Speech:", event.error);
-            };
-
             reconocimiento.onend = () => {
-                // Si el usuario no lo cortó manualmente, procesamos lo que capturó al haber una pausa
-                if (escuchando) {
-                    ejecutarCierreProcesamiento();
-                }
+                if (escuchando) ejecutarCierreProcesamiento();
             };
         }
 
         function alternarDictado() {
             if (!reconocimiento) return;
-
             if (!escuchando) {
                 escuchando = true;
                 acumuladoFrase = "";
                 document.getElementById('btn-grabar').classList.add('escuchando');
-                document.getElementById('transcripcion-tiempo-real').innerText = "Escuchando... Hablá ahora.";
+                document.getElementById('transcripcion-tiempo-real').innerText = "Escuchando...";
                 reconocimiento.start();
             } else {
                 ejecutarCierreProcesamiento();
@@ -435,9 +501,7 @@
         function ejecutarCierreProcesamiento() {
             escuchando = false;
             document.getElementById('btn-grabar').classList.remove('escuchando');
-            if (reconocimiento) {
-                reconocimiento.stop();
-            }
+            if (reconocimiento) reconocimiento.stop();
             
             setTimeout(() => {
                 procesarTextoFinal(acumuladoFrase);
@@ -453,13 +517,10 @@
                 nombreLista = texto;
                 document.getElementById('titulo-lista-actual').innerText = "📋 LISTA: " + nombreLista.toUpperCase();
                 document.getElementById('titulo-lista-actual').style.display = "block";
-                
                 pasoActual = 2;
                 document.getElementById('indicador-paso').innerText = "Paso 2: Dictá los materiales";
             } else if (pasoActual === 2) {
-                // Separamos de corrido usando pausas lógicas
                 let fragmentos = texto.split(/,|\by\b|\btambién\b|\bcon\b/i);
-                
                 fragmentos.forEach(f => {
                     let limpio = f.trim();
                     if (limpio.length > 1) {
@@ -467,14 +528,12 @@
                         itemsLista.push(limpio);
                     }
                 });
-
                 renderizarListaChecklist();
                 document.getElementById('btn-pdf').style.display = "flex";
                 document.getElementById('btn-reiniciar').style.display = "flex";
             }
         }
 
-        // CONTROL RENDER: DIBUJAR LISTA E INYECTAR BOTÓN DE BORRADO INDIVIDUAL
         function renderizarListaChecklist() {
             const contenedor = document.getElementById('lista-materiales-checklist');
             contenedor.innerHTML = ""; 
@@ -497,7 +556,6 @@
                 divIzq.appendChild(checkbox);
                 divIzq.appendChild(label);
 
-                // Botón X para eliminar el ítem si se transcribió erróneo
                 const btnBorrar = document.createElement('button');
                 btnBorrar.className = 'btn-borrar-item';
                 btnBorrar.innerHTML = '❌';
@@ -517,29 +575,58 @@
             }
         }
 
-        // EXPORTACIÓN DE PDF DE ALTA CALIDAD PROFESIONAL (FONDO BLANCO AUTOMÁTICO)
+        // --- GENERADOR DE PDF ESTRUCTURALMENTE CORREGIDO ---
         function generarPDF() {
-            const elemento = document.getElementById('bloque-imprimible');
+            // 1. Armamos la maqueta limpia e independiente en el bloque oculto
+            const datosEmpresaSrc = document.getElementById('datos-cliente-texto').innerHTML;
+            const logoSrc = document.getElementById('logo-preview').src;
             
-            // Ocultamos temporalmente los botones de borrado (las X) para que no salgan impresas en el PDF
-            const botonesBorrar = document.querySelectorAll('.btn-borrar-item');
-            botonesBorrar.forEach(btn => btn.style.display = 'none');
+            document.getElementById('pdf-datos-empresa').innerHTML = datosEmpresaSrc || "<strong>Lista de Materiales</strong>";
+            
+            const pdfLogo = document.getElementById('pdf-logo-empresa');
+            if(logoSrc && !logoSrc.endsWith('index.html') && logoSrc.length > 100) {
+                pdfLogo.src = logoSrc;
+                pdfLogo.style.display = "block";
+            } else {
+                pdfLogo.style.display = "none";
+            }
 
-            // Cambiamos el bloque a modo PDF (Letras negras, fondo blanco)
-            elemento.classList.add('pdf-modo');
+            document.getElementById('pdf-titulo-lista').innerText = "Lista: " + nombreLista;
+
+            // 2. Inyectamos los materiales sin arrastrar los botones de borrado (las X)
+            const contenedorItemsPDF = document.getElementById('pdf-contenedor-items');
+            contenedorItemsPDF.innerHTML = "";
+
+            itemsLista.forEach(item => {
+                const fila = document.createElement('div');
+                fila.className = 'pdf-fila';
+                
+                const casillero = document.createElement('div');
+                casillero.className = 'pdf-casillero';
+
+                const texto = document.createElement('div');
+                texto.className = 'pdf-texto-item';
+                texto.innerText = item;
+
+                fila.appendChild(casillero);
+                fila.appendChild(texto);
+                contenedorItemsPDF.appendChild(fila);
+            });
+
+            // 3. Apuntamos la librería al bloque espejo e imprimimos de forma segura
+            const elementoPDF = document.getElementById('espejo-pdf-oculto');
+            elementoPDF.style.display = "block"; // Encendido veloz para la captura del motor
 
             const opciones = {
                 margin:       15,
                 filename:     `Lista_${nombreLista.replace(/\s+/g, '_')}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, backgroundColor: '#FFFFFF' },
+                html2canvas:  { scale: 2, backgroundColor: '#FFFFFF', useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Ejecutar renderizador y restaurar diseño de pantalla al terminar
-            html2pdf().set(opciones).from(elemento).save().then(() => {
-                elemento.classList.remove('pdf-modo');
-                botonesBorrar.forEach(btn => btn.style.display = 'block');
+            html2pdf().set(opciones).from(elementoPDF).save().then(() => {
+                elementoPDF.style.display = "none"; // Volvemos a ocultar el bloque espejo comercial
             });
         }
 
@@ -557,7 +644,7 @@
             }
         }
 
-        /* --- MANEJO DE PERFIL COMERCIAL (LOCALSTORAGE) --- */
+        /* --- LOGICA DE PERFIL (LOCALSTORAGE) --- */
         let logoBase64 = "";
 
         function abrirPerfil() {
@@ -591,9 +678,7 @@
             localStorage.setItem('p_mail', document.getElementById('p-mail').value.trim());
             localStorage.setItem('p_fiscal', document.getElementById('p-fiscal').value.trim());
             localStorage.setItem('p_adicional', document.getElementById('p-adicional').value.trim());
-            if (logoBase64) {
-                localStorage.setItem('p_logo', logoBase64);
-            }
+            if (logoBase64) localStorage.setItem('p_logo', logoBase64);
             cerrarPerfil();
             cargarEncabezadoPerfilEnPantalla();
         }
@@ -613,13 +698,11 @@
             if (nombre || telefono || mail || fiscal || adicional || logo) {
                 divHeader.style.display = "flex";
                 let HTMLdatos = "";
-
                 if (nombre) HTMLdatos += `<strong>${nombre}</strong><br>`;
-                if (telefono) HTMLdatos += `📱 Tel: ${telefono}<br>`;
-                if (mail) HTMLdatos += `✉️ Msg: ${mail}<br>`;
-                if (fiscal) HTMLdatos += `📄 ID: ${fiscal}<br>`;
+                if (telefono) HTMLdatos += `Tel: ${telefono}<br>`;
+                if (mail) HTMLdatos += `Msg: ${mail}<br>`;
+                if (fiscal) HTMLdatos += `${fiscal}<br>`;
                 if (adicional) HTMLdatos += `<small>${adicional}</small>`;
-
                 divTexto.innerHTML = HTMLdatos;
 
                 if (logo) {
