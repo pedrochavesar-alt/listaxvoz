@@ -413,7 +413,36 @@
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
+  /* ── X DELETE BTN ── */
+  .item-delete {
+    margin-left: auto;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #555;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    padding: 0;
+  }
+  .item-delete:active { background: rgba(255,68,68,0.2); color: var(--red); }
+
+  /* ── PDF BTN ── */
+  #pdf-btn {
+    background: #fff;
+    color: #000;
+    margin-top: 10px;
+    font-size: 18px;
+  }
+  #pdf-btn svg { flex-shrink: 0; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -471,7 +500,7 @@
       <span class="placeholder">Ej: "2 caños de media, 5 codos, 1 llave de paso..."</span>
     </div>
 
-    <div class="mic-hint" id="items-hint">Hablá de corrido — pausá para agregar</div>
+    <div class="mic-hint" id="items-hint">🟢 Tocá → dictá → tocá de nuevo para agregar</div>
     <button class="mic-btn" id="items-mic-btn" onclick="toggleItemsMic()">
       <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="2" width="6" height="12" rx="3"/>
@@ -479,12 +508,7 @@
       </svg>
     </button>
 
-    <div class="btn-row">
-      <button class="btn btn-outline btn-small" onclick="clearItems()">🗑 Borrar</button>
-      <button class="btn btn-green btn-small" id="add-to-list-btn" onclick="addToList()" disabled>+ Agregar a lista</button>
-    </div>
-
-    <button class="btn btn-outline" style="margin-top:10px" onclick="backToStep1()">← Cambiar nombre</button>
+    <button class="btn btn-outline" style="margin-top:14px" onclick="backToStep1()">← Cambiar nombre</button>
   </div>
 
   <!-- RESULT LIST -->
@@ -498,9 +522,13 @@
     <ul id="checklist"></ul>
 
     <button class="btn btn-green" onclick="addMoreItems()" style="margin-bottom:10px">🎤 Agregar más ítems</button>
-    <button class="btn" id="whatsapp-btn" onclick="sendWhatsApp()">
+    <button class="btn" id="pdf-btn" onclick="exportPDF()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Exportar PDF
+    </button>
+    <button class="btn" id="whatsapp-btn" onclick="sendWhatsApp()" style="margin-top:10px">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.08L2 22l4.93-1.29A9.93 9.93 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.85 14.15c-.2.56-1.17 1.08-1.61 1.13-.41.05-.93.07-1.5-.09-.34-.1-.78-.24-1.33-.47-2.32-.97-3.84-3.27-3.96-3.42-.12-.15-.96-1.28-.96-2.44 0-1.16.6-1.73.81-1.96.21-.23.46-.29.61-.29.16 0 .31.01.44.01.16.01.36-.06.56.43.2.49.68 1.67.74 1.79.06.12.1.26.02.41-.08.15-.12.24-.23.37-.12.13-.24.29-.35.39-.11.1-.23.22-.1.43.13.21.59.96 1.27 1.55.87.77 1.61 1.01 1.83 1.12.23.11.36.09.49-.06.13-.15.56-.65.71-.87.15-.22.3-.18.5-.11.2.07 1.28.61 1.5.72.22.11.36.17.42.26.05.1.05.58-.15 1.14z"/></svg>
-      Enviar a la Ferretería por WhatsApp
+      Enviar por WhatsApp
     </button>
     <button class="btn btn-outline" style="margin-top:10px" onclick="clearAll()">🗑 Nueva lista</button>
   </section>
@@ -710,16 +738,25 @@ function toggleNameMic() {
 /* ─────────────────── ITEMS MIC ─────────────────── */
 function toggleItemsMic() {
   if (itemsListening) {
-    // DETENER
-    itemsListening = false;         // bajar flag ANTES de stop()
+    // DETENER + AGREGAR A LISTA (mic = Enter)
+    itemsListening = false;
     itemsRecognition.stop();
     setMicState('items', false);
-    setStatus('Listo — agregá a la lista', true);
+    // Esperar brevemente para que el último resultado final llegue antes de agregar
+    setTimeout(() => {
+      if (itemsText.trim()) {
+        addToList();
+      } else {
+        setStatus('No se detectó texto. Intentá de nuevo.', false);
+      }
+    }, 300);
   } else {
     // INICIAR
+    itemsText = '';
+    showTranscript('items-transcript', '');
     itemsListening = true;
     setMicState('items', true);
-    setStatus('🎤 Escuchando materiales...', true);
+    setStatus('🎤 Escuchando... tocá de nuevo para agregar', true);
     try { itemsRecognition.start(); } catch(_) {}
   }
 }
@@ -785,16 +822,15 @@ function backToStep1() {
 }
 
 function clearItems() {
-  if (itemsListening) { itemsListening = false; try { itemsRecognition.stop(); } catch(e){} }
+  if (itemsListening) { itemsListening = false; try { itemsRecognition.stop(); } catch(_){} }
   itemsText = '';
   showTranscript('items-transcript', '');
-  document.getElementById('add-to-list-btn').disabled = true;
   setMicState('items', false);
 }
 
 function addToList() {
   if (!itemsText.trim()) return;
-  // Detener mic limpiamente
+  // Asegurar mic detenido
   itemsListening = false;
   try { itemsRecognition.stop(); } catch(_) {}
   setMicState('items', false);
@@ -804,11 +840,10 @@ function addToList() {
   listItems = listItems.concat(parsed);
   itemsText = '';
   showTranscript('items-transcript', '');
-  document.getElementById('add-to-list-btn').disabled = true;
   renderList();
   document.getElementById('step2-card').style.display = 'none';
   document.getElementById('list-section').classList.add('visible');
-  setStatus('✅ Lista actualizada', true);
+  setStatus('✅ ' + parsed.length + ' ítem(s) agregado(s)', true);
 }
 
 function addMoreItems() {
@@ -816,17 +851,19 @@ function addMoreItems() {
   document.getElementById('step2-card').style.display = 'block';
   itemsText = '';
   showTranscript('items-transcript', '');
-  document.getElementById('add-to-list-btn').disabled = true;
-  setStatus('Dictá más materiales', true);
+  setStatus('🎤 Tocá el mic para dictar más', false);
 }
 
 function clearAll() {
   if (confirm('¿Empezar una lista nueva? Se borrará todo.')) {
     listName = ''; listItems = []; nameText = ''; itemsText = '';
+    if (nameListening) { nameListening = false; try { nameRecognition.stop(); } catch(_){} }
+    if (itemsListening) { itemsListening = false; try { itemsRecognition.stop(); } catch(_){} }
     showTranscript('name-transcript', '');
     showTranscript('items-transcript', '');
     document.getElementById('confirm-name-btn').disabled = true;
-    document.getElementById('add-to-list-btn').disabled = true;
+    setMicState('name', false);
+    setMicState('items', false);
     document.getElementById('list-section').classList.remove('visible');
     document.getElementById('step2-card').style.display = 'none';
     document.getElementById('step1-card').style.display = 'block';
@@ -851,7 +888,6 @@ function parseItems(text) {
 
 /* ─────────────────── RENDER LIST ─────────────────── */
 function renderList() {
-  // Header
   document.getElementById('list-name-display').textContent = listName;
   renderProfileHeader();
 
@@ -860,15 +896,32 @@ function renderList() {
   listItems.forEach((item, i) => {
     const li = document.createElement('li');
     li.dataset.index = i;
-    li.innerHTML = `
-      <div class="check-box">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-      </div>
-      <span>${item}</span>
-    `;
-    li.onclick = () => li.classList.toggle('checked');
+
+    // Checkbox area (toggle checked)
+    const checkWrap = document.createElement('div');
+    checkWrap.className = 'check-box';
+    checkWrap.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    checkWrap.onclick = () => li.classList.toggle('checked');
+
+    // Text
+    const span = document.createElement('span');
+    span.textContent = item;
+    span.onclick = () => li.classList.toggle('checked');
+
+    // Delete X
+    const delBtn = document.createElement('button');
+    delBtn.className = 'item-delete';
+    delBtn.innerHTML = '✕';
+    delBtn.title = 'Borrar ítem';
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      listItems.splice(i, 1);
+      renderList();
+    };
+
+    li.appendChild(checkWrap);
+    li.appendChild(span);
+    li.appendChild(delBtn);
     ul.appendChild(li);
   });
 }
@@ -897,7 +950,164 @@ function sendWhatsApp() {
   window.open(url, '_blank');
 }
 
-/* ─────────────────── STATUS ─────────────────── */
+/* ─────────────────── EXPORT PDF ─────────────────── */
+async function exportPDF() {
+  if (!listItems.length) { setStatus('No hay ítems para exportar', false); return; }
+
+  setStatus('⏳ Generando PDF...', true);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const pageW = 210;
+  const pageH = 297;
+  const margin = 14;
+  const contentW = pageW - margin * 2;
+
+  // ── ENCABEZADO NEGRO ──
+  doc.setFillColor(0, 0, 0);
+  doc.rect(0, 0, pageW, 38, 'F');
+
+  // Franja verde inferior del header
+  doc.setFillColor(127, 255, 0);
+  doc.rect(0, 36, pageW, 3, 'F');
+
+  // Título "Lista x Voz"
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(26);
+  doc.setTextColor(127, 255, 0);
+  doc.text('Lista x Voz', margin, 24);
+
+  // Subtítulo
+  doc.setFontSize(9);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Relevamiento de materiales', margin, 32);
+
+  // Fecha en el header (derecha)
+  const now = new Date();
+  const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  doc.setFontSize(9);
+  doc.setTextColor(180, 180, 180);
+  doc.text(fecha, pageW - margin, 24, { align: 'right' });
+
+  let y = 48;
+
+  // ── LOGO DEL PERFIL (si existe) ──
+  if (logoDataURL) {
+    try {
+      const imgW = 28;
+      const imgH = 28;
+      doc.addImage(logoDataURL, 'JPEG', pageW - margin - imgW, y, imgW, imgH);
+    } catch(_) {}
+  }
+
+  // ── DATOS DE PERFIL ──
+  const hasProfile = profile.name || profile.phone || profile.mail || profile.tax || profile.extra;
+  if (hasProfile) {
+    doc.setFillColor(18, 18, 18);
+    const profileBoxH = 
+      (profile.name ? 7 : 0) +
+      (profile.phone ? 6 : 0) +
+      (profile.mail ? 6 : 0) +
+      (profile.tax ? 6 : 0) +
+      (profile.extra ? 6 * (profile.extra.split('\n').length) : 0) + 8;
+    doc.roundedRect(margin, y, contentW, profileBoxH, 2, 2, 'F');
+
+    let py = y + 7;
+    if (profile.name) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      doc.text(profile.name, margin + 4, py);
+      py += 7;
+    }
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(180, 180, 180);
+    if (profile.phone) { doc.text('Tel: ' + profile.phone, margin + 4, py); py += 6; }
+    if (profile.mail)  { doc.text('Mail: ' + profile.mail, margin + 4, py); py += 6; }
+    if (profile.tax)   { doc.text('ID Fiscal: ' + profile.tax, margin + 4, py); py += 6; }
+    if (profile.extra) {
+      const extraLines = profile.extra.split('\n');
+      extraLines.forEach(line => { doc.text(line, margin + 4, py); py += 6; });
+    }
+    y += profileBoxH + 6;
+  }
+
+  // ── NOMBRE DE LA LISTA ──
+  doc.setFillColor(127, 255, 0);
+  doc.rect(margin, y, 4, 12, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(0, 0, 0);
+  // nombre en blanco sobre fondo negro
+  doc.setFillColor(20, 20, 20);
+  doc.roundedRect(margin, y, contentW, 14, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.text(listName, margin + 8, y + 9.5);
+  y += 20;
+
+  // ── ITEMS ──
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+
+  listItems.forEach((item, i) => {
+    // Nueva página si no entra
+    if (y > pageH - 20) {
+      doc.addPage();
+      // Mini header en páginas extras
+      doc.setFillColor(0, 0, 0);
+      doc.rect(0, 0, pageW, 12, 'F');
+      doc.setFillColor(127, 255, 0);
+      doc.rect(0, 11, pageW, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(127, 255, 0);
+      doc.text('Lista x Voz  ·  ' + listName, margin, 8);
+      y = 20;
+    }
+
+    // Fila alternada
+    if (i % 2 === 0) {
+      doc.setFillColor(245, 245, 245);
+      doc.rect(margin, y - 5, contentW, 9, 'F');
+    }
+
+    // Checkbox cuadrado
+    doc.setDrawColor(127, 255, 0);
+    doc.setLineWidth(0.6);
+    doc.rect(margin + 1, y - 4, 5, 5);
+
+    // Número + texto
+    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(8);
+    doc.text(String(i + 1).padStart(2, '0'), margin + 8, y);
+
+    doc.setTextColor(20, 20, 20);
+    doc.setFontSize(11);
+    const lines = doc.splitTextToSize(item, contentW - 20);
+    doc.text(lines, margin + 16, y);
+
+    y += lines.length > 1 ? lines.length * 5 + 3 : 9;
+  });
+
+  // ── PIE ──
+  y += 6;
+  doc.setDrawColor(127, 255, 0);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageW - margin, y);
+  y += 5;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Generado con Lista x Voz  ·  ' + fecha, margin, y);
+  doc.text('Total: ' + listItems.length + ' ítem(s)', pageW - margin, y, { align: 'right' });
+
+  // ── GUARDAR ──
+  const filename = (listName || 'lista').replace(/[^a-zA-Z0-9áéíóúñ ]/g, '').trim().replace(/ /g, '_') + '_' + fecha.replace(/\//g, '-') + '.pdf';
+  doc.save(filename);
+  setStatus('✅ PDF descargado', true);
+}
 function setStatus(msg, active) {
   const bar = document.getElementById('status-bar');
   bar.textContent = msg;
