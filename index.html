@@ -546,7 +546,7 @@
       </div>
       <input type="file" id="logo-file-input" accept="image/*" onchange="handleLogoUpload(event)">
     </div>
-    <div class="field-group">
+   <div class="field-group">
       <label class="field-label" for="p-name">Nombre / Empresa</label>
       <input class="field-input" id="p-name" type="text" placeholder="Juan Pérez Instalaciones">
     </div>
@@ -585,11 +585,56 @@ let itemsListening = false;
 let nameText = '';
 let itemsText = '';
 let profile = JSON.parse(localStorage.getItem('lxv_profile') || '{}');
-let logoDataURL = localStorage.getItem('lxv_logo') || '';
+let logoDataURL = ''; // Se manejará vía IndexedDB para evitar límites de tamaño
+
+/* ─── INDEXEDDB FOR LOGO PERSISTENCE ─── */
+const dbName = "ListaVoxDB";
+const storeName = "Assets";
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, 1);
+    request.onupgradeneeded = (e) => {
+      e.target.result.createObjectStore(storeName);
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function saveLogoToDB(dataURL) {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).put(dataURL, "userLogo");
+    return tx.complete;
+  } catch (err) {
+    console.error("Error guardando logo en IndexedDB:", err);
+  }
+}
+
+async function loadLogoFromDB() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(storeName, "readonly");
+      const req = tx.objectStore(storeName).get("userLogo");
+      req.onsuccess = () => resolve(req.result || '');
+      req.onerror = () => resolve('');
+    });
+  } catch (err) {
+    console.error("Error cargando logo de IndexedDB:", err);
+    return '';
+  }
+}
 
 /* ─── INIT ─── */
-window.addEventListener('load', () => {
-  loadProfile();
+window.addEventListener('load', async () => {
+  // Cambio de subtítulo dinámico solicitado
+  const sub = document.getElementById('app-subtitle');
+  if (sub) sub.textContent = "Lista de Relevamiento";
+  
+  await loadProfile();
   checkSpeechSupport();
 });
 
@@ -843,7 +888,7 @@ function sendWhatsApp() {
   window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
-/* ─── EXPORT PDF — FIXED ─── */
+/* ─── EXPORT PDF ─── */
 async function exportPDF() {
   if (!listItems.length) { setStatus('No hay ítems para exportar', false); return; }
   setStatus('⏳ Generando PDF...', true);
@@ -865,7 +910,7 @@ async function exportPDF() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(150, 150, 150);
-    doc.text('Relevamiento de materiales', margin, 34);
+    doc.text('Lista de Relevamiento', margin, 34); // Modificación de subtítulo acordada
     const now = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
     doc.setFontSize(9);
@@ -874,37 +919,44 @@ async function exportPDF() {
 
     let y = 50;
 
-    // ── LOGO — FIX: detección robusta de formato, nunca rompe el PDF ──
+    // ── LOGO CON INTEGRACIÓN ROBUSTA VIA DATAURL ──
     let logoW = 0;
     if (logoDataURL) {
       try {
-        // Detectar formato desde el data URI
-        let fmt = 'JPEG'; // fallback seguro
+        let fmt = 'JPEG';
         const mimeMatch = logoDataURL.match(/data:image\/([a-zA-Z+]+);/);
         if (mimeMatch) {
           const mime = mimeMatch[1].toLowerCase();
           if (mime === 'png') fmt = 'PNG';
           else if (mime === 'webp') fmt = 'WEBP';
-          else fmt = 'JPEG'; // jpg, jpeg, gif, bmp → JPEG como fallback
         }
         logoW = 30;
         doc.addImage(logoDataURL, fmt, pageW - margin - logoW, y, logoW, 30);
       } catch(e) {
-        // Logo falló — continuar sin él, no romper el PDF
         logoW = 0;
         console.warn('Logo PDF error:', e);
       }
     }
 
-    // ── PERFIL — FIX: limpieza robusta de emojis y chars no imprimibles ──
-    function stripForPDF(str) {
+    // MAPA DE CONVERSIÓN DE EMOJIS COMPATIBLES CON FUENTES ESTÁNDAR
+    const emojiMap = {
+      '📱': '[Cel]', '📞': '[Tel]', '📧': '[Mail]', '✉️': '[Mail]', '🏠': '[Dir]',
+      '📍': '[Loc]', '🌐': '[Web]', '💻': '[Web]', '💼': '[Empresa]', '👤': '[User]',
+      '🛠️': '[Servicio]', '🔧': '[Taller]', '⚡': '[⚡]', '📝': '[Nota]', '💬': '[Chat]'
+    };
+
+    function replaceEmojis(str) {
       if (!str) return '';
-      return str
-        .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')   // emojis suplementarios
-        .replace(/[\u{2600}-\u{27BF}]/gu, '')       // símbolos y dingbats
-        .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')     // emojis varios
-        .replace(/[\u{FE00}-\u{FEFF}]/gu, '')       // variation selectors
-        .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '') // solo latin imprimible
+      let processed = str;
+      Object.keys(emojiMap).forEach(emoji => {
+        processed = processed.replaceAll(emoji, emojiMap[emoji]);
+      });
+      // Filtrar emojis remanentes que rompan fuentes básicas para evitar bloques vacíos
+      return processed
+        .replace(/[\u{1F000}-\u{1FFFF}]/gu, '▪ ')
+        .replace(/[\u{2600}-\u{27BF}]/gu, '▪ ')
+        .replace(/[\u{1F300}-\u{1FAFF}]/gu, '▪ ')
+        .replace(/[\u{FE00}-\u{FEFF}]/gu, '')
         .trim();
     }
 
@@ -916,8 +968,8 @@ async function exportPDF() {
       if (profile.mail)  boxH += 6;
       if (profile.tax)   boxH += 6;
       if (profile.extra) {
-        const stripped = stripForPDF(profile.extra);
-        if (stripped) boxH += 6 * stripped.split('\n').filter(l => l.trim()).length;
+        const cleanExtra = replaceEmojis(profile.extra);
+        if (cleanExtra) boxH += 6 * cleanExtra.split('\n').filter(l => l.trim()).length;
       }
       boxH += 4;
 
@@ -931,27 +983,27 @@ async function exportPDF() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
         doc.setTextColor(255, 255, 255);
-        doc.text(stripForPDF(profile.name), margin + 5, py, { maxWidth: textW });
+        doc.text(replaceEmojis(profile.name), margin + 5, py, { maxWidth: textW });
         py += 8;
       }
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(180, 180, 180);
       if (profile.phone) {
-        doc.text('Tel: ' + stripForPDF(profile.phone), margin + 5, py, { maxWidth: textW });
+        doc.text('Tel: ' + replaceEmojis(profile.phone), margin + 5, py, { maxWidth: textW });
         py += 6;
       }
       if (profile.mail) {
-        doc.text('Mail: ' + stripForPDF(profile.mail), margin + 5, py, { maxWidth: textW });
+        doc.text('Mail: ' + replaceEmojis(profile.mail), margin + 5, py, { maxWidth: textW });
         py += 6;
       }
       if (profile.tax) {
-        doc.text('ID Fiscal: ' + stripForPDF(profile.tax), margin + 5, py, { maxWidth: textW });
+        doc.text('ID Fiscal: ' + replaceEmojis(profile.tax), margin + 5, py, { maxWidth: textW });
         py += 6;
       }
       if (profile.extra) {
-        const stripped = stripForPDF(profile.extra);
-        stripped.split('\n').forEach(line => {
+        const cleanExtra = replaceEmojis(profile.extra);
+        cleanExtra.split('\n').forEach(line => {
           const l = line.trim();
           if (l) { doc.text(l, margin + 5, py, { maxWidth: textW }); py += 6; }
         });
@@ -1012,7 +1064,9 @@ async function exportPDF() {
     y += 5;
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
+    
+    // CAMBIO EFECTUADO: Color Verde Manzana #7FFF00 (RGB: 127, 255, 0) para el pie de página
+    doc.setTextColor(127, 255, 0); 
     doc.text('Generado con Lista x Voz  ·  ' + fecha, margin, y);
     doc.text('Total: ' + listItems.length + ' ítem(s)', pageW - margin, y, { align: 'right' });
 
@@ -1055,7 +1109,7 @@ function closeProfile() {
   document.getElementById('profile-modal').classList.remove('open');
 }
 
-function saveProfile() {
+async function saveProfile() {
   profile = {
     name: document.getElementById('p-name').value.trim(),
     phone: document.getElementById('p-phone').value.trim(),
@@ -1064,16 +1118,20 @@ function saveProfile() {
     extra: document.getElementById('p-extra').value.trim(),
   };
   localStorage.setItem('lxv_profile', JSON.stringify(profile));
-  if (logoDataURL) localStorage.setItem('lxv_logo', logoDataURL);
+  
+  if (logoDataURL) {
+    await saveLogoToDB(logoDataURL);
+  }
+  
   updateProfileThumb();
   if (listItems.length || listName) renderProfileHeader();
   document.getElementById('profile-modal').classList.remove('open');
   setStatus('✅ Perfil guardado', true);
 }
 
-function loadProfile() {
+async function loadProfile() {
   profile = JSON.parse(localStorage.getItem('lxv_profile') || '{}');
-  logoDataURL = localStorage.getItem('lxv_logo') || '';
+  logoDataURL = await loadLogoFromDB();
   updateProfileThumb();
 }
 
@@ -1114,7 +1172,7 @@ function handleLogoUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (ev) => {
+  reader.onload = async (ev) => {
     logoDataURL = ev.target.result;
     document.getElementById('logo-preview-img').src = logoDataURL;
     document.getElementById('logo-preview-img').style.display = 'block';
@@ -1127,5 +1185,7 @@ document.getElementById('profile-modal').addEventListener('click', function(e) {
   if (e.target === this) closeProfile();
 });
 </script>
+</body>
+</html>
 </body>
 </html>
