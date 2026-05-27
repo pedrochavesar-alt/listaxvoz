@@ -2,685 +2,596 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Lista x Voz</title>
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LISTAXVOZ - Generador Comercial</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* --- ESTILOS DE ALTO CONTRASTE ORIGINALES (VERDE LIMA Y NEGRO) --- */
+        :root {
+            --bg-color: #000000;
+            --card-bg: #121212;
+            --accent-color: #7FFF00; /* Verde Lima Neón */
+            --text-color: #FFFFFF;
+            --text-muted: #A0A0A0;
+            --border-color: #262626;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            background-color: #000000;
-            color: #FFFFFF;
-            padding: 15px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
             display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            justify-content: center;
         }
 
+        .app-container {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Encabezado Principal */
         header {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border-bottom: 4px solid var(--accent-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #7FFF00;
-            padding-bottom: 10px;
         }
 
-        h1 {
-            font-size: 32px;
-            color: #FFFFFF;
+        .logo-title {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .logo-title span {
+            color: var(--accent-color);
+        }
+
+        .badge {
+            font-size: 11px;
+            background-color: #222;
+            color: var(--accent-color);
+            padding: 5px 10px;
             font-weight: bold;
-        }
-        h1 span {
-            color: #7FFF00;
-        }
-
-        /* --- PERFIL DE USUARIO --- */
-        .btn-perfil {
-            background: none;
-            border: none;
-            font-size: 32px;
-            cursor: pointer;
-            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid var(--accent-color);
         }
 
-        #modal-perfil {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.98);
-            z-index: 1000;
+        /* Tarjetas de Contenedores */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             padding: 20px;
-            overflow-y: auto;
-        }
-
-        .modal-content {
-            border: 3px solid #7FFF00;
-            padding: 20px;
-            border-radius: 10px;
-            background-color: #111111;
-        }
-
-        .modal-content h2 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            color: #7FFF00;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
-        .form-group label {
-            display: block;
-            font-size: 16px;
-            margin-bottom: 5px;
+        label {
+            font-size: 13px;
             font-weight: bold;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .form-group input, .form-group textarea {
-            width: 100%;
+        input[type="text"] {
+            background-color: #1a1a1a;
+            border: 1px solid var(--border-color);
+            color: #fff;
             padding: 12px;
-            font-size: 18px;
-            background-color: #222222;
-            border: 2px solid #FFFFFF;
-            color: #FFFFFF;
-            border-radius: 5px;
-        }
-
-        .form-group input:focus, .form-group textarea:focus {
-            border-color: #7FFF00;
-            outline: none;
-        }
-
-        .form-group textarea {
-            height: 100px;
-            resize: none;
-        }
-
-        /* --- CONTENEDOR DE LA HOJA EN PANTALLA --- */
-        #contenedor-resultado {
-            background-color: #111111;
-            border: 2px solid #222222;
-            border-radius: 8px;
-            padding: 15px;
-            flex-grow: 1;
-            margin-bottom: 15px;
-        }
-
-        #header-cliente {
-            margin-bottom: 20px;
             font-size: 16px;
-            line-height: 1.4;
-            border-left: 4px solid #7FFF00;
-            padding-left: 10px;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* Bloque editable para datos comerciales */
+        .datos-empresa-box {
+            background-color: #1a1a1a;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 12px;
+            font-size: 15px;
+            min-height: 80px;
+            border-radius: 6px;
+            outline: none;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .datos-empresa-box:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* Carga dinámica de logotipo empresarial */
+        .logo-upload-section {
             display: flex;
             align-items: center;
             gap: 15px;
         }
 
-        #logo-preview {
-            max-width: 70px;
-            max-height: 70px;
+        .btn-upload {
+            background-color: #222;
+            border: 1px dashed var(--accent-color);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .btn-upload input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            height: 100%;
+            width: 100%;
+        }
+
+        .preview-box {
+            width: 65px;
+            height: 65px;
+            border: 1px solid var(--border-color);
+            background-color: #1a1a1a;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .preview-box img {
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
-            border-radius: 5px;
-            display: none;
         }
 
-        #indicador-paso {
-            font-size: 20px;
-            color: #7FFF00;
-            text-align: center;
-            margin-bottom: 15px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        #titulo-lista-actual {
-            font-size: 24px;
-            text-align: center;
-            margin-bottom: 15px;
-            color: #FFFFFF;
-            border-bottom: 1px dashed #444444;
-            padding-bottom: 5px;
-            font-weight: bold;
-        }
-
-        /* --- FILAS DE MATERIALES --- */
-        .item-material {
+        /* Sección de Dictado por Voz Activo */
+        .voice-section {
             display: flex;
+            flex-direction: column;
             align-items: center;
+            gap: 12px;
+            padding: 25px 20px;
+            background: linear-gradient(180deg, #121212 0%, #1a1a1a 100%);
+        }
+
+        .mic-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #222;
+            border: 3px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 32px;
+            user-select: none;
+        }
+
+        .mic-button.recording {
+            border-color: var(--accent-color);
+            background-color: rgba(127, 255, 0, 0.1);
+            box-shadow: 0 0 20px rgba(127, 255, 0, 0.4);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* Listado de Materiales Detectados */
+        .items-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .item-row {
+            background-color: #1a1a1a;
+            border-left: 4px solid var(--accent-color);
+            padding: 14px 15px;
+            border-radius: 0 6px 6px 0;
+            display: flex;
             justify-content: space-between;
-            margin-bottom: 12px;
-            padding: 10px 5px;
-            border-bottom: 1px solid #222222;
-        }
-
-        .item-izq {
-            display: flex;
             align-items: center;
-            flex-grow: 1;
+            animation: fadeIn 0.2s ease-in-out;
         }
 
-        .item-material input[type="checkbox"] {
-            width: 28px;
-            height: 28px;
-            margin-right: 15px;
-            cursor: pointer;
-            accent-color: #7FFF00;
-            flex-shrink: 0;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .item-material label {
-            font-size: 20px;
-            color: #FFFFFF;
-            cursor: pointer;
+        .item-text {
+            font-size: 16px;
+            font-weight: 500;
             word-break: break-word;
+            padding-right: 10px;
         }
 
-        .item-material input[type="checkbox"]:checked + label {
-            text-decoration: line-through;
-            color: #666666;
-        }
-
-        .btn-borrar-item {
+        .btn-delete {
             background: none;
             border: none;
-            color: #FF3B30;
-            font-size: 22px;
-            padding: 5px 10px;
+            color: #ff4d4d;
+            font-weight: bold;
+            font-size: 18px;
             cursor: pointer;
-            margin-left: 10px;
+            padding: 0 5px;
         }
 
-        /* --- AJUSTE MANUAL COMPLEMENTARIO --- */
-        #bloque-manual {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            font-style: italic;
+            padding: 25px 0;
+            font-size: 15px;
         }
 
-        #input-manual {
-            flex-grow: 1;
-            padding: 12px;
-            font-size: 16px;
-            background-color: #111111;
-            border: 2px solid #444444;
-            color: #FFFFFF;
-            border-radius: 6px;
-        }
-
-        #input-manual:focus {
-            border-color: #7FFF00;
-            outline: none;
-        }
-
-        .btn-add-manual {
-            background-color: #333333;
-            color: #FFFFFF;
-            border: 2px solid #555555;
-            padding: 0 15px;
+        /* Disparador de Exportación Comercial */
+        .btn-submit {
+            background-color: var(--accent-color);
+            color: #000000;
+            border: none;
+            padding: 16px;
             font-size: 18px;
             font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-
-        /* --- MONITOR Y CONTROL DE AUDIO --- */
-        #transcripcion-tiempo-real {
-            font-size: 20px;
-            color: #A0A0A0;
-            font-style: italic;
-            text-align: center;
-            min-height: 45px;
-            margin-bottom: 15px;
-            padding: 5px 10px;
-        }
-
-        .contenedor-mic {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 15px 0;
-        }
-
-        .btn-mic {
-            background-color: #7FFF00;
-            border: none;
-            width: 110px;
-            height: 110px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(127, 255, 0, 0.4);
-        }
-
-        .btn-mic.escuchando {
-            background-color: #FF3B30;
-            animation: pulso 1.2s infinite;
-        }
-
-        .btn-mic svg {
-            width: 50px;
-            height: 50px;
-            fill: #000000;
-        }
-
-        .btn-mic.escuchando svg {
-            fill: #FFFFFF;
-        }
-
-        @keyframes pulso {
-            0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(255, 59, 48, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
-        }
-
-        /* --- BOTONES DE ACCIÓN --- */
-        .btn-accion {
-            background-color: #7FFF00;
-            color: #000000;
-            font-size: 20px;
-            font-weight: bold;
-            border: none;
-            padding: 18px;
             border-radius: 8px;
-            width: 100%;
             cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
+            transition: background-color 0.2s, transform 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(127, 255, 0, 0.2);
             margin-top: 10px;
         }
 
-        .btn-secundario {
-            background-color: transparent;
-            border: 2px solid #FFFFFF;
-            color: #FFFFFF;
-            margin-top: 15px;
-            padding: 12px;
-            font-size: 16px;
+        .btn-submit:hover {
+            background-color: #6ed600;
+        }
+
+        .btn-submit:active {
+            transform: scale(0.99);
+        }
+
+        .btn-submit:disabled {
+            background-color: #333333;
+            color: #777777;
+            cursor: not-allowed;
+            box-shadow: none;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Lista<span>xVoz</span></h1>
-        <button class="btn-perfil" onclick="abrirPerfil()" aria-label="Perfil">👤</button>
-    </header>
+    <div class="app-container">
+        
+        <header>
+            <div class="logo-title">LISTA<span>XVOZ</span></div>
+            <div class="badge">SISTEMA DE PRESUPUESTOS</div>
+        </header>
 
-    <div id="indicador-paso">Paso 1: Dictá el Nombre de la Lista</div>
+        <div class="card">
+            <div class="form-group">
+                <label for="nombre-lista-input">Nombre o Título de la Lista</label>
+                <input type="text" id="nombre-lista-input" placeholder="Ej: Baño Principal, Materiales Electricidad">
+            </div>
 
-    <div id="contenedor-resultado">
-        <div id="header-cliente" style="display: none;">
-            <img id="logo-preview" src="" alt="Logo">
-            <div id="datos-cliente-texto"></div>
+            <div class="form-group">
+                <label>Datos Comerciales de la Empresa / Profesional</label>
+                <div id="datos-cliente-texto" class="datos-empresa-box" contenteditable="true" placeholder="Escribí acá tu Nombre, Teléfono, Email o Info del Cliente..."></div>
+            </div>
+
+            <div class="form-group">
+                <label>Logotipo del Documento</label>
+                <div class="logo-upload-section">
+                    <div class="btn-upload">
+                        Subir Imagen Logo
+                        <input type="file" id="logo-input" accept="image/*">
+                    </div>
+                    <div class="preview-box">
+                        <img id="logo-preview" src="" alt="">
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="titulo-lista-actual" style="display: none;"></div>
-        <div id="lista-materiales-checklist"></div>
-    </div>
 
-    <div id="bloque-manual" style="display: none;">
-        <input type="text" id="input-manual" placeholder="Escribí un material si falló la voz...">
-        <button class="btn-add-manual" onclick="agregarItemManual()">+</button>
-    </div>
-
-    <div id="transcripcion-tiempo-real">Presioná el micrófono para hablar...</div>
-
-    <div class="contenedor-mic">
-        <button id="btn-grabar" class="btn-mic" onclick="alternarDictado()">
-            <svg viewBox="0 0 24 24">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
-            </svg>
-        </button>
-    </div>
-
-    <button id="btn-pdf" class="btn-accion" onclick="generarPDF()" style="display: none;">
-        📄 Descargar Lista en PDF Profesional
-    </button>
-
-    <button id="btn-reiniciar" class="btn-accion btn-secundario" onclick="reiniciarFlujo()" style="display: none;">
-        Nueva Lista / Borrar Todo
-    </button>
-
-    <div id="modal-perfil">
-        <div class="modal-content">
-            <h2>Perfil de Trabajo</h2>
-            <div class="form-group">
-                <label>Subir Logo Comercial:</label>
-                <input type="file" id="p-logo" accept="image/*" onchange="procesarLogo(this)">
-            </div>
-            <div class="form-group">
-                <label>Nombre / Empresa:</label>
-                <input type="text" id="p-nombre" placeholder="Ej: Electricidad Oeste">
-            </div>
-            <div class="form-group">
-                <label>📱 Teléfono Celular:</label>
-                <input type="tel" id="p-telefono" placeholder="Ej: 11 2345-6789">
-            </div>
-            <div class="form-group">
-                <label>✉️ Mail de contacto:</label>
-                <input type="email" id="p-mail" placeholder="contacto@empresa.com">
-            </div>
-            <div class="form-group">
-                <label>📄 ID Fiscal (CUIT / RUT):</label>
-                <input type="text" id="p-fiscal" placeholder="Ej: CUIT 20-33333333-7">
-            </div>
-            <div class="form-group">
-                <label>📝 Información Adicional:</label>
-                <textarea id="p-adicional" placeholder="Dirección del taller, horarios..."></textarea>
-            </div>
-            <button class="btn-accion" onclick="guardarPerfil()">Guardar Datos</button>
-            <button class="btn-accion btn-secundario" onclick="cerrarPerfil()">Cancelar</button>
+        <div class="card voice-section">
+            <div class="mic-button" id="mic-btn">🎤</div>
+            <div class="status-text" id="status-text">Micrófono inactivo. Presioná para dictar un material.</div>
         </div>
+
+        <div class="card">
+            <label>Materiales e Ítems Registrados</label>
+            <div class="items-container" id="items-container">
+                <div class="empty-state">No hay ítems en la lista todavía. Dictá usando el micrófono.</div>
+            </div>
+        </div>
+
+        <button class="btn-submit" id="btn-pdf" disabled onclick="generarPDF()">Generar PDF Comercial</button>
+
     </div>
 
     <script>
-        let pasoActual = 1; 
-        let nombreLista = "";
+        // --- CONTROLADOR DE ESTADO GLOBAL ---
+        let nombreLista = '';
         let itemsLista = [];
-        let escuchando = false;
-        let acumuladoFrase = "";
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let reconocimiento;
-        
-        if (SpeechRecognition) {
-            reconocimiento = new SpeechRecognition();
-            reconocimiento.continuous = true; // Evita cortes automáticos bruscos en Android
-            reconocimiento.interimResults = true; 
-            reconocimiento.lang = 'es-AR';
+        const nombreListaInput = document.getElementById('nombre-lista-input');
+        const datosClienteTexto = document.getElementById('datos-cliente-texto');
+        const logoInput = document.getElementById('logo-input');
+        const logoPreview = document.getElementById('logo-preview');
+        const micBtn = document.getElementById('mic-btn');
+        const statusText = document.getElementById('status-text');
+        const itemsContainer = document.getElementById('items-container');
+        const btnPdf = document.getElementById('btn-pdf');
 
-            reconocimiento.onresult = (event) => {
-                let textFinal = '';
-                let textInterim = '';
-                for (let i = 0; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        textFinal += event.results[i][0].transcript + ' ';
-                    } else {
-                        textInterim += event.results[i][0].transcript;
-                    }
-                }
-                acumuladoFrase = textFinal.trim();
-                document.getElementById('transcripcion-tiempo-real').innerText = textFinal + textInterim || "Escuchando...";
-            };
+        // Sincronización del Nombre de la Lista
+        nombreListaInput.addEventListener('input', (e) => {
+            nombreLista = e.target.value.trim();
+            actualizarEstadoBoton();
+        });
 
-            reconocimiento.onend = () => {
-                if (acumuladoFrase.trim()) {
-                    procesarTextoFinal(acumuladoFrase);
-                }
-                acumuladoFrase = "";
-                escuchando = false;
-                document.getElementById('btn-grabar').classList.remove('escuchando');
-                document.getElementById('transcripcion-tiempo-real').innerText = "Presioná el micrófono para hablar...";
-            };
-        }
-
-        function alternarDictado() {
-            if (!reconocimiento) return;
-            if (!escuchando) {
-                escuchando = true;
-                acumuladoFrase = "";
-                document.getElementById('btn-grabar').classList.add('escuchando');
-                document.getElementById('transcripcion-tiempo-real').innerText = "Escuchando... Dictá ahora.";
-                reconocimiento.start();
-            } else {
-                reconocimiento.stop(); 
+        // Procesamiento en Base64 seguro para inyección de Logotipos en PDF
+        logoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    logoPreview.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
             }
-        }
+        });
 
-        function procesarTextoFinal(texto) {
-            texto = texto.trim();
-            if (!texto) return;
-
-            if (pasoActual === 1) {
-                nombreLista = texto;
-                document.getElementById('titulo-lista-actual').innerText = "📋 LISTA: " + nombreLista.toUpperCase();
-                document.getElementById('titulo-lista-actual').style.display = "block";
-                pasoActual = 2;
-                document.getElementById('indicador-paso').innerText = "Paso 2: Dictá los materiales";
-                document.getElementById('bloque-manual').style.display = "flex";
-            } else if (pasoActual === 2) {
-                let fragmentos = texto.split(/,|\by\b|\btambién\b|\bcon\b/i);
-                fragmentos.forEach(f => {
-                    let limpio = f.trim();
-                    if (limpio.length > 1) {
-                        limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
-                        if(!itemsLista.includes(limpio)) {
-                            itemsLista.push(limpio);
-                        }
-                    }
-                });
-                renderizarListaChecklist();
-                document.getElementById('btn-pdf').style.display = "flex";
-                document.getElementById('btn-reiniciar').style.display = "flex";
+        // Actualización de UI del listado en pantalla
+        function renderItems() {
+            itemsContainer.innerHTML = '';
+            
+            if (itemsLista.length === 0) {
+                itemsContainer.innerHTML = '<div class="empty-state">No hay ítems en la lista todavía. Dictá usando el micrófono.</div>';
+                actualizarEstadoBoton();
+                return;
             }
-        }
-
-        function renderizarListaChecklist() {
-            const contenedor = document.getElementById('lista-materiales-checklist');
-            contenedor.innerHTML = ""; 
 
             itemsLista.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'item-material';
-
-                const divIzq = document.createElement('div');
-                divIzq.className = 'item-izq';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `item-${index}`;
-
-                const label = document.createElement('label');
-                label.htmlFor = `item-${index}`;
-                label.innerText = item;
-
-                divIzq.appendChild(checkbox);
-                divIzq.appendChild(label);
-
-                const btnBorrar = document.createElement('button');
-                btnBorrar.className = 'btn-borrar-item';
-                btnBorrar.innerHTML = '❌';
-                btnBorrar.onclick = () => eliminarItem(index);
-
-                div.appendChild(divIzq);
-                div.appendChild(btnBorrar);
-                contenedor.appendChild(div);
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `
+                    <span class="item-text">${item}</span>
+                    <button class="btn-delete" onclick="eliminarItem(${index})">✕</button>
+                `;
+                itemsContainer.appendChild(row);
             });
-        }
 
-        function agregarItemManual() {
-            const input = document.getElementById('input-manual');
-            let valor = input.value.trim();
-            if(valor.length > 1) {
-                valor = valor.charAt(0).toUpperCase() + valor.slice(1);
-                itemsLista.push(valor);
-                renderizarListaChecklist();
-                input.value = "";
-                document.getElementById('btn-pdf').style.display = "flex";
-                document.getElementById('btn-reiniciar').style.display = "flex";
-            }
+            actualizarEstadoBoton();
         }
 
         function eliminarItem(index) {
             itemsLista.splice(index, 1);
-            renderizarListaChecklist();
-            if(itemsLista.length === 0) {
-                document.getElementById('btn-pdf').style.display = "none";
+            renderItems();
+        }
+
+        function actualizarEstadoBoton() {
+            if (nombreLista && itemsLista.length > 0) {
+                btnPdf.removeAttribute('disabled');
+            } else {
+                btnPdf.setAttribute('disabled', 'true');
             }
         }
 
-        /* --- GENERACIÓN DEL PDF FIJADO DETRÁS DE LA CAPA VISIBLE (INFALIBLE EN MÓVILES) --- */
+        // --- SISTEMA DE DICTADO POR VOZ INTEGRADO (OPTIMIZADO) ---
+        if ('webkitSpeechRecognition' in window || 'speechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'es-AR';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                micBtn.classList.add('recording');
+                statusText.innerText = 'Escuchando activo... Dictá un material ahora';
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('recording');
+                statusText.innerText = 'Micrófono inactivo. Presioná para volver a dictar';
+            };
+
+            recognition.onresult = (event) => {
+                const texto = event.results[0][0].transcript.trim();
+                if (texto) {
+                    // Formateo estético inmediato (Primera letra Mayúscula)
+                    const textoFormateado = texto.charAt(0).toUpperCase() + texto.slice(1);
+                    itemsLista.push(textoFormateado);
+                    renderItems();
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Error capturado en Speech API: ", event.error);
+                statusText.innerText = 'Error al procesar voz. Volvé a intentar.';
+                micBtn.classList.remove('recording');
+            };
+
+            micBtn.addEventListener('click', () => {
+                if (micBtn.classList.contains('recording')) {
+                    recognition.stop();
+                } else {
+                    recognition.start();
+                }
+            });
+        } else {
+            statusText.innerText = 'Reconocimiento de voz no soportado de forma nativa por este navegador.';
+            micBtn.style.opacity = '0.4';
+            micBtn.style.cursor = 'not-allowed';
+        }
+
+        // --- GENERACIÓN DE PDF COMERCIAL BLINDADA CONTRA HOJAS BLANCAS ---
         function generarPDF() {
-            const datosEmpresaSrc = document.getElementById('datos-cliente-texto').innerHTML;
-            const logoSrc = document.getElementById('logo-preview').src;
+            if (!nombreLista || itemsLista.length === 0) return;
+
+            // 1. Desactivar temporalmente el scroll animado para que no cause retrasos en la foto del lienzo
+            const estiloScrollOriginal = document.documentElement.style.scrollBehavior;
+            document.documentElement.style.scrollBehavior = 'auto';
+
+            // 2. Guardar la posición exacta del usuario y forzar salto instantáneo al top absoluto (0,0)
+            const posicionXOriginal = window.scrollX;
+            const posicionYOriginal = window.scrollY;
+            window.scrollTo(0, 0);
+
+            // 3. Cartel de bloqueo estético de renderizado
+            const cargando = document.createElement('div');
+            cargando.style.position = 'fixed';
+            cargando.style.top = '0';
+            cargando.style.left = '0';
+            cargando.style.width = '100vw';
+            cargando.style.height = '100vh';
+            cargando.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+            cargando.style.color = '#7FFF00';
+            cargando.style.zIndex = '9999';
+            cargando.style.display = 'flex';
+            cargando.style.flexDirection = 'column';
+            cargando.style.justifyContent = 'center';
+            cargando.style.alignItems = 'center';
+            cargando.style.fontFamily = 'Arial, sans-serif';
+            cargando.innerHTML = `
+                <div style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">Generando PDF Comercial...</div>
+                <div style="font-size: 16px; color: #FFFFFF;">Por favor, esperá un momento.</div>
+            `;
+            document.body.appendChild(cargando);
+
+            const datosEmpresaSrc = datosClienteTexto.innerHTML;
+            const logoSrc = logoPreview.src;
             
-            // Capa invisible al usuario por Z-Index, pero con existencia y tamaño real para el motor móvil
+            // 4. Contenedor temporal aislado montado arriba del DOM para asegurar renders perfectos
             const pdfContainer = document.createElement('div');
-            pdfContainer.style.position = 'fixed';
+            pdfContainer.style.position = 'absolute';
             pdfContainer.style.top = '0';
             pdfContainer.style.left = '0';
-            pdfContainer.style.width = '800px'; 
-            pdfContainer.style.zIndex = '-1'; 
+            pdfContainer.style.width = '750px'; 
+            pdfContainer.style.zIndex = '9000'; 
             pdfContainer.style.backgroundColor = '#FFFFFF';
             pdfContainer.style.color = '#000000';
             pdfContainer.style.padding = '40px';
             pdfContainer.style.boxSizing = 'border-box';
-            pdfContainer.style.fontFamily = 'Arial, sans-serif';
 
             let itemsHTML = '';
             itemsLista.forEach(item => {
                 itemsHTML += `
-                    <div style="display: flex; align-items: center; padding: 14px 8px; border-bottom: 1px solid #DCDCDC;">
-                        <div style="width: 22px; height: 22px; border: 2px solid #000000; margin-right: 15px; border-radius: 3px; background-color: #FFFFFF; flex-shrink:0;"></div>
-                        <div style="font-size: 18px; color: #000000; font-weight: 500;">${item}</div>
+                    <div style="display: flex; align-items: center; padding: 14px 10px; border-bottom: 1px solid #E0E0E0; page-break-inside: avoid;">
+                        <div style="width: 18px; height: 18px; border: 2px solid #000000; margin-right: 15px; border-radius: 3px; background-color: #FFFFFF; flex-shrink: 0;"></div>
+                        <div style="font-size: 17px; color: #000000; font-weight: 500; word-break: break-word;">${item}</div>
                     </div>
                 `;
             });
 
             let logoHTML = '';
             if(logoSrc && !logoSrc.endsWith('index.html') && logoSrc.length > 100) {
-                logoHTML = `<img src="${logoSrc}" style="max-width: 90px; max-height: 90px; object-fit: contain;">`;
+                logoHTML = `<img src="${logoSrc}" style="max-width: 100px; max-height: 100px; object-fit: contain; border-radius: 5px;">`;
             }
 
             pdfContainer.innerHTML = `
-                <div style="background-color: #000000; color: #FFFFFF; padding: 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #7FFF00; margin-bottom: 25px; border-radius: 4px;">
-                    <div style="font-size: 28px; font-weight: bold; letter-spacing: 1px; color: #FFFFFF !important;">LISTA<span style="color: #7FFF00;">XVOZ</span></div>
-                    <div style="font-size: 12px; text-align: right; font-weight: bold; color: #FFFFFF !important;">Documento Comercial de Trabajo</div>
+                <div style="background-color: #000000; color: #FFFFFF; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #7FFF00; margin-bottom: 30px; border-radius: 4px;">
+                    <div style="font-size: 28px; font-weight: bold; letter-spacing: 0.5px;">LISTA<span style="color: #7FFF00;">XVOZ</span></div>
+                    <div style="font-size: 11px; text-align: right; font-weight: bold; color: #7FFF00;">DOCUMENTO COMERCIAL DE TRABAJO</div>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid #E5E5E5;">
-                    <div style="font-size: 14px; line-height: 1.6; color: #333333 !important;">${datosEmpresaSrc || "<strong>Lista de Materiales</strong>"}</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 35px; padding-bottom: 20px; border-bottom: 2px solid #F0F0F0;">
+                    <div style="font-size: 15px; line-height: 1.6; color: #333333;">${datosEmpresaSrc || "<span style='color:#999; font-style:italic;'>Lista de Materiales</span>"}</div>
                     <div>${logoHTML}</div>
                 </div>
 
-                <div style="font-size: 22px; font-weight: bold; color: #000000 !important; margin-bottom: 25px; text-transform: uppercase; border-left: 6px solid #7FFF00; padding-left: 12px;">Lista: ${nombreLista.toUpperCase()}</div>
+                <div style="font-size: 24px; font-weight: bold; color: #000000; margin-bottom: 30px; text-transform: uppercase; border-left: 6px solid #7FFF00; padding-left: 14px;">
+                    Lista: ${nombreLista.toUpperCase()}
+                </div>
                 
                 <div style="display: flex; flex-direction: column; width: 100%;">
                     ${itemsHTML}
+                </div>
+
+                <div style="margin-top: 60px; text-align: center; font-size: 11px; color: #888888; border-top: 1px solid #E5E5E5; padding-top: 15px;">
+                    Generado automáticamente mediante la aplicación Lista x Voz
                 </div>
             `;
             
             document.body.appendChild(pdfContainer);
 
+            // Ajustes técnicos avanzados para la captura de html2pdf
             const opciones = {
-                margin:       12,
+                margin:       15,
                 filename:     `Lista_${nombreLista.replace(/\s+/g, '_')}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, backgroundColor: '#FFFFFF', useCORS: true },
+                html2canvas:  { 
+                    scale: 2, 
+                    backgroundColor: '#FFFFFF', 
+                    useCORS: true, 
+                    logging: false,
+                    scrollY: 0,
+                    scrollX: 0
+                },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            html2pdf().set(opciones).from(pdfContainer).save().then(() => {
-                document.body.removeChild(pdfContainer);
-            });
+            // 5. Retraso de renderizado controlado para dar holgura al motor del navegador antes de disparar la descarga
+            setTimeout(() => {
+                html2pdf().set(opciones).from(pdfContainer).save().then(() => {
+                    // Limpieza absoluta y devolución del scroll a la experiencia del usuario
+                    document.body.removeChild(pdfContainer);
+                    document.body.removeChild(cargando);
+                    window.scrollTo(posicionXOriginal, posicionYOriginal);
+                    document.documentElement.style.scrollBehavior = estiloScrollOriginal;
+                }).catch(err => {
+                    console.error("Error crítico de exportación PDF: ", err);
+                    document.body.removeChild(pdfContainer);
+                    document.body.removeChild(cargando);
+                    window.scrollTo(posicionXOriginal, posicionYOriginal);
+                    document.documentElement.style.scrollBehavior = estiloScrollOriginal;
+                });
+            }, 350);
         }
-
-        function reiniciarFlujo() {
-            if (confirm("¿Querés borrar todo y empezar una nueva lista?")) {
-                pasoActual = 1;
-                nombreLista = "";
-                itemsLista = [];
-                document.getElementById('titulo-lista-actual').style.display = "none";
-                document.getElementById('lista-materiales-checklist').innerHTML = "";
-                document.getElementById('btn-pdf').style.display = "none";
-                document.getElementById('btn-reiniciar').style.display = "none";
-                document.getElementById('bloque-manual').style.display = "none";
-                document.getElementById('indicador-paso').innerText = "Paso 1: Dictá el Nombre de la Lista";
-                acumuladoFrase = "";
-            }
-        }
-
-        /* --- LOGICA DE PERFIL (LOCALSTORAGE) --- */
-        let logoBase64 = "";
-
-        function abrirPerfil() {
-            document.getElementById('modal-perfil').style.display = "block";
-            document.getElementById('p-nombre').value = localStorage.getItem('p_nombre') || "";
-            document.getElementById('p-telefono').value = localStorage.getItem('p_telefono') || "";
-            document.getElementById('p-mail').value = localStorage.getItem('p_mail') || "";
-            document.getElementById('p-fiscal').value = localStorage.getItem('p_fiscal') || "";
-            document.getElementById('p-adicional').value = localStorage.getItem('p_adicional') || "";
-            logoBase64 = localStorage.getItem('p_logo') || "";
-        }
-
-        function cerrarPerfil() {
-            document.getElementById('modal-perfil').style.display = "none";
-        }
-
-        function procesarLogo(input) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    logoBase64 = e.target.result;
-                }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function guardarPerfil() {
-            localStorage.setItem('p_nombre', document.getElementById('p-nombre').value.trim());
-            localStorage.setItem('p_telefono', document.getElementById('p-telefono').value.trim());
-            localStorage.setItem('p_mail', document.getElementById('p-mail').value.trim());
-            localStorage.setItem('p_fiscal', document.getElementById('p-fiscal').value.trim());
-            localStorage.setItem('p_adicional', document.getElementById('p-adicional').value.trim());
-            if (logoBase64) localStorage.setItem('p_logo', logoBase64);
-            cerrarPerfil();
-            cargarEncabezadoPerfilEnPantalla();
-        }
-
-        function cargarEncabezadoPerfilEnPantalla() {
-            const nombre = localStorage.getItem('p_nombre');
-            const telefono = localStorage.getItem('p_telefono');
-            const mail = localStorage.getItem('p_mail');
-            const fiscal = localStorage.getItem('p_fiscal');
-            const adicional = localStorage.getItem('p_adicional');
-            const logo = localStorage.getItem('p_logo');
-
-            const divHeader = document.getElementById('header-cliente');
-            const divTexto = document.getElementById('datos-cliente-texto');
-            const imgLogo = document.getElementById('logo-preview');
-
-            if (nombre || telefono || mail || fiscal || adicional || logo) {
-                divHeader.style.display = "flex";
-                let HTMLdatos = "";
-                if (nombre) HTMLdatos += `<strong>${nombre}</strong><br>`;
-                if (telefono) HTMLdatos += `Tel: ${telefono}<br>`;
-                if (mail) HTMLdatos += `Contacto: ${mail}<br>`;
-                if (fiscal) HTMLdatos += `${fiscal}<br>`;
-                if (adicional) HTMLdatos += `<small>${adicional}</small>`;
-                divTexto.innerHTML = HTMLdatos;
-
-                if (logo) {
-                    imgLogo.src = logo;
-                    imgLogo.style.display = "block";
-                } else {
-                    imgLogo.style.display = "none";
-                }
-            } else {
-                divHeader.style.display = "none";
-            }
-        }
-
-        window.onload = function() {
-            cargarEncabezadoPerfilEnPantalla();
-        };
     </script>
 </body>
 </html>
