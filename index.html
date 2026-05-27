@@ -273,6 +273,13 @@
   .check-box svg { display: none; }
   li.checked .check-box svg { display: block; }
 
+  #whatsapp-btn {
+    background: #25D366;
+    color: #fff;
+    margin-top: 8px;
+    font-size: 18px;
+  }
+
   #status-bar {
     position: fixed;
     bottom: 0;
@@ -455,7 +462,7 @@
 <header id="app-header">
   <div>
     <div id="app-title">Lista x Voz</div>
-    <div id="app-subtitle">Lista de Relevamiento</div>
+    <div id="app-subtitle">Relevamiento de materiales</div>
   </div>
   <button id="profile-btn" onclick="openProfile()" title="Perfil">
     <span id="profile-icon">👤</span>
@@ -517,6 +524,10 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Exportar PDF
     </button>
+    <button class="btn" id="whatsapp-btn" onclick="sendWhatsApp()" style="margin-bottom:10px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.08L2 22l4.93-1.29A9.93 9.93 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.85 14.15c-.2.56-1.17 1.08-1.61 1.13-.41.05-.93.07-1.5-.09-.34-.1-.78-.24-1.33-.47-2.32-.97-3.84-3.27-3.96-3.42-.12-.15-.96-1.28-.96-2.44 0-1.16.6-1.73.81-1.96.21-.23.46-.29.61-.29.16 0 .31.01.44.01.16.01.36-.06.56.43.2.49.68 1.67.74 1.79.06.12.1.26.02.41-.08.15-.12.24-.23.37-.12.13-.24.29-.35.39-.11.1-.23.22-.1.43.13.21.59.96 1.27 1.55.87.77 1.61 1.01 1.83 1.12.23.11.36.09.49-.06.13-.15.56-.65.71-.87.15-.22.3-.18.5-.11.2.07 1.28.61 1.5.72.22.11.36.17.42.26.05.1.05.58-.15 1.14z"/></svg>
+      Enviar por WhatsApp
+    </button>
     <button class="btn btn-outline" onclick="clearAll()">🗑 Nueva lista</button>
   </section>
 
@@ -541,7 +552,7 @@
     </div>
     <div class="field-group">
       <label class="field-label" for="p-phone">Teléfono</label>
-      <input class="field-input" id="p-phone" type="text" placeholder="+54 11 1234-5678">
+      <input class="field-input" id="p-phone" type="tel" placeholder="+54 11 1234-5678">
     </div>
     <div class="field-group">
       <label class="field-label" for="p-mail">Email</label>
@@ -818,7 +829,21 @@ function renderList() {
   });
 }
 
-/* ─── EXPORT PDF ─── */
+function sendWhatsApp() {
+  if (!listItems.length) { setStatus('No hay ítems en la lista', false); return; }
+  let msg = `*${listName}*\n`;
+  if (profile.name) msg += `_${profile.name}_\n`;
+  if (profile.phone) msg += `Tel: ${profile.phone}\n`;
+  if (profile.mail) msg += `Mail: ${profile.mail}\n`;
+  if (profile.tax) msg += `ID Fiscal: ${profile.tax}\n`;
+  if (profile.extra) msg += `${profile.extra}\n`;
+  msg += '\n*MATERIALES SOLICITADOS:*\n';
+  listItems.forEach(item => { msg += `☐ ${item}\n`; });
+  msg += `\n_Enviado con Lista x Voz_`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+/* ─── EXPORT PDF — FIXED ─── */
 async function exportPDF() {
   if (!listItems.length) { setStatus('No hay ítems para exportar', false); return; }
   setStatus('⏳ Generando PDF...', true);
@@ -840,7 +865,7 @@ async function exportPDF() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(150, 150, 150);
-    doc.text('Lista de Relevamiento', margin, 34); // Subtítulo Actualizado
+    doc.text('Relevamiento de materiales', margin, 34);
     const now = new Date();
     const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
     doc.setFontSize(9);
@@ -849,74 +874,88 @@ async function exportPDF() {
 
     let y = 50;
 
-    // Conteo y renderizado de la caja de perfil primero
+    // ── LOGO — FIX: detección robusta de formato, nunca rompe el PDF ──
+    let logoW = 0;
+    if (logoDataURL) {
+      try {
+        // Detectar formato desde el data URI
+        let fmt = 'JPEG'; // fallback seguro
+        const mimeMatch = logoDataURL.match(/data:image\/([a-zA-Z+]+);/);
+        if (mimeMatch) {
+          const mime = mimeMatch[1].toLowerCase();
+          if (mime === 'png') fmt = 'PNG';
+          else if (mime === 'webp') fmt = 'WEBP';
+          else fmt = 'JPEG'; // jpg, jpeg, gif, bmp → JPEG como fallback
+        }
+        logoW = 30;
+        doc.addImage(logoDataURL, fmt, pageW - margin - logoW, y, logoW, 30);
+      } catch(e) {
+        // Logo falló — continuar sin él, no romper el PDF
+        logoW = 0;
+        console.warn('Logo PDF error:', e);
+      }
+    }
+
+    // ── PERFIL — FIX: limpieza robusta de emojis y chars no imprimibles ──
+    function stripForPDF(str) {
+      if (!str) return '';
+      return str
+        .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')   // emojis suplementarios
+        .replace(/[\u{2600}-\u{27BF}]/gu, '')       // símbolos y dingbats
+        .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')     // emojis varios
+        .replace(/[\u{FE00}-\u{FEFF}]/gu, '')       // variation selectors
+        .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '') // solo latin imprimible
+        .trim();
+    }
+
     const hasProfile = profile.name || profile.phone || profile.mail || profile.tax || profile.extra;
-    let boxH = 10;
     if (hasProfile) {
+      let boxH = 10;
       if (profile.name)  boxH += 8;
       if (profile.phone) boxH += 6;
       if (profile.mail)  boxH += 6;
       if (profile.tax)   boxH += 6;
       if (profile.extra) {
-        const linesCount = profile.extra.split('\n').filter(l => l.trim()).length;
-        boxH += 6 * linesCount;
+        const stripped = stripForPDF(profile.extra);
+        if (stripped) boxH += 6 * stripped.split('\n').filter(l => l.trim()).length;
       }
       boxH += 4;
 
-      // Dibujar fondo de la tarjeta de perfil
       doc.setFillColor(22, 22, 22);
       doc.roundedRect(margin, y, contentW, boxH, 2, 2, 'F');
 
       let py = y + 10;
-      let logoW = logoDataURL ? 30 : 0;
       const textW = logoW > 0 ? contentW - logoW - 10 : contentW - 8;
 
       if (profile.name) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
         doc.setTextColor(255, 255, 255);
-        doc.text(profile.name, margin + 5, py, { maxWidth: textW });
+        doc.text(stripForPDF(profile.name), margin + 5, py, { maxWidth: textW });
         py += 8;
       }
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(180, 180, 180);
       if (profile.phone) {
-        doc.text('Tel: ' + profile.phone, margin + 5, py, { maxWidth: textW });
+        doc.text('Tel: ' + stripForPDF(profile.phone), margin + 5, py, { maxWidth: textW });
         py += 6;
       }
       if (profile.mail) {
-        doc.text('Mail: ' + profile.mail, margin + 5, py, { maxWidth: textW });
+        doc.text('Mail: ' + stripForPDF(profile.mail), margin + 5, py, { maxWidth: textW });
         py += 6;
       }
       if (profile.tax) {
-        doc.text('ID Fiscal: ' + profile.tax, margin + 5, py, { maxWidth: textW });
+        doc.text('ID Fiscal: ' + stripForPDF(profile.tax), margin + 5, py, { maxWidth: textW });
         py += 6;
       }
       if (profile.extra) {
-        profile.extra.split('\n').forEach(line => {
+        const stripped = stripForPDF(profile.extra);
+        stripped.split('\n').forEach(line => {
           const l = line.trim();
           if (l) { doc.text(l, margin + 5, py, { maxWidth: textW }); py += 6; }
         });
       }
-
-      // ── TRAER CAPA AL FRENTE: Estampar el logo arriba de la caja ──
-      if (logoDataURL) {
-        try {
-          let fmt = 'JPEG';
-          const mimeMatch = logoDataURL.match(/data:image\/([a-zA-Z+]+);/);
-          if (mimeMatch) {
-            const mime = mimeMatch[1].toLowerCase();
-            if (mime === 'png') fmt = 'PNG';
-            else if (mime === 'webp') fmt = 'WEBP';
-          }
-          // Se dibuja en la esquina superior derecha interna de la caja contenedora
-          doc.addImage(logoDataURL, fmt, pageW - margin - logoW - 4, y + 4, logoW, 24);
-        } catch(e) {
-          console.warn('Logo PDF error:', e);
-        }
-      }
-
       y += boxH + 8;
     }
 
@@ -964,22 +1003,17 @@ async function exportPDF() {
       y += lines.length > 1 ? lines.length * 5.5 + 2 : 9;
     });
 
-    // ── PIE DE PÁGINA ──
+    // ── PIE ──
     y += 6;
     if (y > pageH - 14) { doc.addPage(); y = 20; }
     doc.setDrawColor(127, 255, 0);
     doc.setLineWidth(0.5);
     doc.line(margin, y, pageW - margin, y);
     y += 5;
-    
-    // Cambiado a Verde Manzana corporativo
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(127, 255, 0); 
-    doc.text('Generado con Lista x Voz  ·  ' + fecha, margin, y);
-    
     doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
+    doc.text('Generado con Lista x Voz  ·  ' + fecha, margin, y);
     doc.text('Total: ' + listItems.length + ' ítem(s)', pageW - margin, y, { align: 'right' });
 
     const filename = (listName || 'lista')
@@ -997,4 +1031,101 @@ async function exportPDF() {
 }
 
 function setStatus(msg, active) {
-  const
+  const bar = document.getElementById('status-bar');
+  bar.textContent = msg;
+  bar.className = active ? 'active' : '';
+}
+
+/* ─── PROFILE ─── */
+function openProfile() {
+  document.getElementById('p-name').value = profile.name || '';
+  document.getElementById('p-phone').value = profile.phone || '';
+  document.getElementById('p-mail').value = profile.mail || '';
+  document.getElementById('p-tax').value = profile.tax || '';
+  document.getElementById('p-extra').value = profile.extra || '';
+  if (logoDataURL) {
+    document.getElementById('logo-preview-img').src = logoDataURL;
+    document.getElementById('logo-preview-img').style.display = 'block';
+    document.getElementById('logo-preview-wrap').querySelector('.upload-icon').style.display = 'none';
+  }
+  document.getElementById('profile-modal').classList.add('open');
+}
+
+function closeProfile() {
+  document.getElementById('profile-modal').classList.remove('open');
+}
+
+function saveProfile() {
+  profile = {
+    name: document.getElementById('p-name').value.trim(),
+    phone: document.getElementById('p-phone').value.trim(),
+    mail: document.getElementById('p-mail').value.trim(),
+    tax: document.getElementById('p-tax').value.trim(),
+    extra: document.getElementById('p-extra').value.trim(),
+  };
+  localStorage.setItem('lxv_profile', JSON.stringify(profile));
+  if (logoDataURL) localStorage.setItem('lxv_logo', logoDataURL);
+  updateProfileThumb();
+  if (listItems.length || listName) renderProfileHeader();
+  document.getElementById('profile-modal').classList.remove('open');
+  setStatus('✅ Perfil guardado', true);
+}
+
+function loadProfile() {
+  profile = JSON.parse(localStorage.getItem('lxv_profile') || '{}');
+  logoDataURL = localStorage.getItem('lxv_logo') || '';
+  updateProfileThumb();
+}
+
+function updateProfileThumb() {
+  const thumb = document.getElementById('profile-thumb');
+  const icon = document.getElementById('profile-icon');
+  if (logoDataURL) {
+    thumb.src = logoDataURL;
+    thumb.style.display = 'block';
+    icon.style.display = 'none';
+  } else {
+    thumb.style.display = 'none';
+    icon.style.display = 'block';
+  }
+}
+
+function renderProfileHeader() {
+  const ph = document.getElementById('profile-header');
+  const logo = document.getElementById('profile-logo-display');
+  const hasAny = profile.name || profile.phone || profile.mail || profile.tax || profile.extra;
+  if (logoDataURL) { logo.src = logoDataURL; logo.classList.add('visible'); }
+  else { logo.classList.remove('visible'); }
+  if (hasAny) {
+    let html = '';
+    if (profile.name) html += `<strong style="font-size:15px;color:#fff">${profile.name}</strong><br>`;
+    if (profile.phone) html += `Tel: ${profile.phone}<br>`;
+    if (profile.mail) html += `Mail: ${profile.mail}<br>`;
+    if (profile.tax) html += `ID Fiscal: ${profile.tax}<br>`;
+    if (profile.extra) html += `<span style="white-space:pre-line">${profile.extra}</span>`;
+    ph.innerHTML = html;
+    ph.classList.add('has-data');
+  } else {
+    ph.classList.remove('has-data');
+  }
+}
+
+function handleLogoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    logoDataURL = ev.target.result;
+    document.getElementById('logo-preview-img').src = logoDataURL;
+    document.getElementById('logo-preview-img').style.display = 'block';
+    document.getElementById('logo-preview-wrap').querySelector('.upload-icon').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('profile-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeProfile();
+});
+</script>
+</body>
+</html>
