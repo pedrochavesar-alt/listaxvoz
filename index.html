@@ -258,6 +258,7 @@ let itemsProcessed = 0;
 
 let profile    = JSON.parse(localStorage.getItem('lxv_profile') || '{}');
 let logoDataURL = localStorage.getItem('lxv_logo') || '';
+let logoJpeg    = localStorage.getItem('lxv_logo_jpeg') || '';
 
 /* ════════════════════════════════════════════════════════
    INIT
@@ -363,36 +364,50 @@ function toggleNameMic() {
 
 function toggleItemsMic() {
   if (itemsListening) {
-    // ── DETENER — flag abajo ANTES de stop para que onend no reinicie ──
+    // DETENER — flag abajo ANTES de stop para que onend no reinicie
     itemsListening = false;
     try { itemsRecognition.stop(); } catch(_) {}
     setMicState('items', false);
 
-    // Capturar lo transcripto y esperar 400ms para el último resultado final
-    const snapshot = () => {
+    setTimeout(() => {
       const captured = itemsText.trim();
-      // Limpiar estado para próxima sesión
-      itemsText      = '';
-      itemsProcessed = 0;
+      itemsText = '';
       showTx('items-transcript', '');
-
       if (captured) {
-        const parsed = parseItems(captured);
-        listItems = listItems.concat(parsed);
+        listItems = listItems.concat(parseItems(captured));
         renderList();
         document.getElementById('list-section').classList.add('visible');
         setStatus('✅ Agregado — tocá el mic para el siguiente ítem', true);
       } else {
         setStatus('No se detectó texto. Intentá de nuevo.', false);
       }
-    };
-    setTimeout(snapshot, 400);
+    }, 400);
 
   } else {
-    // ── INICIAR — resetear todo antes de arrancar ──
-    itemsText      = '';
-    itemsProcessed = 0;
+    // INICIAR — crear objeto recognition NUEVO cada vez
+    // Esto elimina cualquier estado acumulado del motor de voz entre sesiones
+    itemsText = '';
     showTx('items-transcript', '');
+
+    itemsRecognition = makeRec('es-AR');
+    itemsRecognition.onresult = (e) => {
+      // Con objeto nuevo: reconstruir desde TODOS los resultados de esta sesión
+      let final = '', interim = '';
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+        else interim += e.results[i][0].transcript;
+      }
+      itemsText = final;
+      showTx('items-transcript', final + interim);
+    };
+    itemsRecognition.onend = () => {
+      if (itemsListening) {
+        setTimeout(() => { if (itemsListening) try { itemsRecognition.start(); } catch(_){} }, 150);
+      } else {
+        setMicState('items', false);
+      }
+    };
+
     itemsListening = true;
     setMicState('items', true);
     setStatus('🎤 Escuchando... tocá de nuevo para agregar', true);
@@ -504,32 +519,6 @@ async function exportPDF() {
   if (!listItems.length) { setStatus('No hay ítems para exportar', false); return; }
   setStatus('⏳ Generando PDF...', true);
 
-  // 1. PRECARGAR LOGO  →  canvas  →  JPEG  (antes de crear el doc)
-  let logoJpeg = null;
-  if (logoDataURL) {
-    try {
-      logoJpeg = await new Promise((res, rej) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const c = document.createElement('canvas');
-            const MAX = 400, s = Math.min(MAX/img.naturalWidth, MAX/img.naturalHeight, 1);
-            c.width  = Math.max(1, Math.round(img.naturalWidth  * s));
-            c.height = Math.max(1, Math.round(img.naturalHeight * s));
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, c.width, c.height);
-            ctx.drawImage(img, 0, 0, c.width, c.height);
-            res(c.toDataURL('image/jpeg', 0.92));
-          } catch(e) { rej(e); }
-        };
-        img.onerror = () => rej(new Error('img load'));
-        img.src = logoDataURL;   // dataURL local — no necesita crossOrigin
-      });
-    } catch(e) { console.warn('Logo preload:', e); logoJpeg = null; }
-  }
-
-  // 2. CONSTRUIR PDF
   try {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit:'mm', format:'a4' });
@@ -548,11 +537,13 @@ async function exportPDF() {
 
     let y = 50;
 
-    // LOGO  (ya es JPEG puro)
+    // LOGO — usar logoJpeg pre-convertido al subir la imagen (sin Promise)
     let LW = 0;
     if (logoJpeg) {
-      LW = 28;
-      doc.addImage(logoJpeg, 'JPEG', PW-M-LW, y, LW, 28);
+      try {
+        doc.addImage(logoJpeg, 'JPEG', PW-M-28, y, 28, 28);
+        LW = 28;
+      } catch(e) { console.warn('addImage:', e); }
     }
 
     // strip: quita emojis y chars fuera de latin-1
@@ -669,6 +660,7 @@ function saveProfile() {
   };
   localStorage.setItem('lxv_profile', JSON.stringify(profile));
   if (logoDataURL) localStorage.setItem('lxv_logo', logoDataURL);
+  if (logoJpeg)    localStorage.setItem('lxv_logo_jpeg', logoJpeg);
   updateProfileThumb();
   if (listName) renderProfileHeader();
   document.getElementById('profile-modal').classList.remove('open');
@@ -678,6 +670,7 @@ function saveProfile() {
 function loadProfile() {
   profile    = JSON.parse(localStorage.getItem('lxv_profile') || '{}');
   logoDataURL = localStorage.getItem('lxv_logo') || '';
+  logoJpeg    = localStorage.getItem('lxv_logo_jpeg') || '';
   updateProfileThumb();
 }
 
@@ -709,10 +702,28 @@ function handleLogoUpload(e) {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
+    // Guardar el dataURL original para mostrar en la UI
     logoDataURL = ev.target.result;
     document.getElementById('logo-preview-img').src = logoDataURL;
     document.getElementById('logo-preview-img').style.display = 'block';
     document.getElementById('logo-preview-wrap').querySelector('.upload-icon').style.display = 'none';
+
+    // Convertir a JPEG via canvas AHORA (sync con el onload del img)
+    // y guardar como logoJpeg listo para usar en el PDF sin promesas
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      const MAX = 400, s = Math.min(MAX/img.naturalWidth, MAX/img.naturalHeight, 1);
+      c.width  = Math.max(1, Math.round(img.naturalWidth  * s));
+      c.height = Math.max(1, Math.round(img.naturalHeight * s));
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      logoJpeg = c.toDataURL('image/jpeg', 0.92);
+      localStorage.setItem('lxv_logo_jpeg', logoJpeg);
+    };
+    img.src = logoDataURL;
   };
   reader.readAsDataURL(file);
 }
