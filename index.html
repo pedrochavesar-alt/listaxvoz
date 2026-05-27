@@ -1,597 +1,1007 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LISTAXVOZ - Generador Comercial</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        :root {
-            --bg-color: #000000;
-            --card-bg: #121212;
-            --accent-color: #7FFF00; /* Verde Lima Neón */
-            --text-color: #FFFFFF;
-            --text-muted: #A0A0A0;
-            --border-color: #262626;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#000000">
+<title>Lista x Voz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700;900&display=swap');
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+  :root {
+    --green: #7FFF00;
+    --green-dark: #5fcc00;
+    --green-dim: rgba(127,255,0,0.15);
+    --bg: #000000;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --white: #ffffff;
+    --gray: #888888;
+    --red: #ff4444;
+  }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-        .app-container {
-            width: 100%;
-            max-width: 650px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Barlow', sans-serif;
+    overflow-x: hidden;
+    overscroll-behavior: none;
+  }
 
-        /* Encabezado Principal */
-        header {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            border-bottom: 4px solid var(--accent-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+  /* ── HEADER ── */
+  #app-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
+    border-bottom: 2px solid var(--green);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 
-        .logo-title {
-            font-size: 28px;
-            font-weight: 900;
-            letter-spacing: 1px;
-        }
+  #app-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: var(--green);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
 
-        .logo-title span {
-            color: var(--accent-color);
-        }
+  #app-subtitle {
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
 
-        .badge {
-            font-size: 11px;
-            background-color: #222;
-            color: var(--accent-color);
-            padding: 5px 10px;
-            font-weight: bold;
-            border-radius: 4px;
-            border: 1px solid var(--accent-color);
-        }
+  #profile-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2.5px solid var(--green);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  #profile-btn:active { background: var(--green-dim); }
+  #profile-btn img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
-        /* Tarjetas de Contenedores */
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+  /* ── MAIN ── */
+  #main {
+    padding: 20px 16px 120px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
+  /* ── STEP CARD ── */
+  .step-card {
+    background: var(--surface);
+    border: 1.5px solid #333;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
 
-        label {
-            font-size: 13px;
-            font-weight: bold;
-            color: var(--accent-color);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+  .step-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 8px;
+  }
 
-        input[type="text"] {
-            background-color: #1a1a1a;
-            border: 1px solid var(--border-color);
-            color: #fff;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 6px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
+  .step-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
 
-        input[type="text"]:focus {
-            border-color: var(--accent-color);
-        }
+  /* ── TEXT DISPLAY ── */
+  .transcript-box {
+    background: var(--surface2);
+    border: 1.5px solid #333;
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 60px;
+    font-size: 20px;
+    color: var(--white);
+    line-height: 1.4;
+    margin-bottom: 16px;
+    word-break: break-word;
+    transition: border-color 0.3s;
+  }
+  .transcript-box.listening {
+    border-color: var(--green);
+    animation: pulse-border 1s infinite;
+  }
+  .transcript-box .placeholder {
+    color: var(--gray);
+    font-style: italic;
+  }
 
-        /* Bloque editable para datos comerciales */
-        .datos-empresa-box {
-            background-color: #1a1a1a;
-            border: 1px solid var(--border-color);
-            color: #fff;
-            padding: 12px;
-            font-size: 15px;
-            min-height: 80px;
-            border-radius: 6px;
-            outline: none;
-            line-height: 1.5;
-            white-space: pre-wrap;
-        }
+  @keyframes pulse-border {
+    0%,100% { border-color: var(--green); box-shadow: 0 0 0 0 rgba(127,255,0,0.4); }
+    50% { border-color: var(--green); box-shadow: 0 0 0 6px rgba(127,255,0,0); }
+  }
 
-        .datos-empresa-box:focus {
-            border-color: var(--accent-color);
-        }
+  /* ── MIC BUTTON ── */
+  .mic-btn {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: none;
+    background: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+    position: relative;
+  }
+  .mic-btn:active { transform: scale(0.93); }
+  .mic-btn.listening {
+    background: var(--red);
+    animation: mic-pulse 1s infinite;
+  }
+  .mic-btn svg { width: 44px; height: 44px; }
 
-        /* Carga dinámica de logotipo empresarial */
-        .logo-upload-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+  @keyframes mic-pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,68,68,0.5); }
+    50% { box-shadow: 0 0 0 18px rgba(255,68,68,0); }
+  }
 
-        .btn-upload {
-            background-color: #222;
-            border: 1px dashed var(--accent-color);
-            color: #fff;
-            padding: 10px 15px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
+  .mic-hint {
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 12px;
+  }
 
-        .btn-upload input[type=file] {
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            cursor: pointer;
-            height: 100%;
-            width: 100%;
-        }
+  /* ── BTN GENERAL ── */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    font-family: 'Barlow', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-green { background: var(--green); color: #000; }
+  .btn-outline { background: transparent; color: var(--green); border: 2px solid var(--green); }
+  .btn-outline:active { background: var(--green-dim); }
+  .btn-small { padding: 12px 18px; font-size: 15px; border-radius: 10px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        .preview-box {
-            width: 65px;
-            height: 65px;
-            border: 1px solid var(--border-color);
-            background-color: #1a1a1a;
-            border-radius: 6px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .btn-row .btn { flex: 1; }
 
-        .preview-box img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
+  /* ── LIST ── */
+  #list-section { display: none; }
+  #list-section.visible { display: block; }
 
-        /* Sección de Dictado por Voz Activo */
-        .voice-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            padding: 25px 20px;
-            background: linear-gradient(180deg, #121212 0%, #1a1a1a 100%);
-        }
+  .list-header-block {
+    background: var(--surface);
+    border: 1.5px solid #333;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
 
-        .mic-button {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: #222;
-            border: 3px solid var(--border-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 32px;
-            user-select: none;
-        }
+  #list-name-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--green);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
 
-        .mic-button.recording {
-            border-color: var(--accent-color);
-            background-color: rgba(127, 255, 0, 0.1);
-            box-shadow: 0 0 20px rgba(127, 255, 0, 0.4);
-            animation: pulse 1.5s infinite;
-        }
+  #profile-header {
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.6;
+    display: none;
+  }
+  #profile-header.has-data { display: block; }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+  #profile-logo-display {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    object-fit: cover;
+    margin-bottom: 10px;
+    display: none;
+  }
+  #profile-logo-display.visible { display: block; }
 
-        .status-text {
-            font-size: 14px;
-            color: var(--text-muted);
-            font-weight: 500;
-            text-align: center;
-        }
+  #checklist {
+    list-style: none;
+    margin-bottom: 16px;
+  }
 
-        /* Listado de Materiales Detectados */
-        .items-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-height: 320px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
+  #checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #222;
+    font-size: 18px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  #checklist li:last-child { border-bottom: none; }
+  #checklist li.checked { opacity: 0.5; text-decoration: line-through; color: var(--gray); }
 
-        .item-row {
-            background-color: #1a1a1a;
-            border-left: 4px solid var(--accent-color);
-            padding: 14px 15px;
-            border-radius: 0 6px 6px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: fadeIn 0.2s ease-in-out;
-        }
+  .check-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2.5px solid var(--green);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    transition: background 0.15s;
+  }
+  li.checked .check-box {
+    background: var(--green);
+  }
+  .check-box svg { display: none; }
+  li.checked .check-box svg { display: block; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+  /* ── WHATSAPP BTN ── */
+  #whatsapp-btn {
+    background: #25D366;
+    color: #fff;
+    margin-top: 8px;
+    font-size: 18px;
+  }
 
-        .item-text {
-            font-size: 16px;
-            font-weight: 500;
-            word-break: break-word;
-            padding-right: 10px;
-        }
+  /* ── STATUS BAR ── */
+  #status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid #222;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--gray);
+    text-align: center;
+    z-index: 40;
+  }
+  #status-bar.active { color: var(--green); }
 
-        .btn-delete {
-            background: none;
-            border: none;
-            color: #ff4d4d;
-            font-weight: bold;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 0 5px;
-        }
+  /* ── PROFILE MODAL ── */
+  #profile-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(4px);
+    overflow-y: auto;
+    padding: 20px 16px 40px;
+  }
+  #profile-modal.open { display: block; }
 
-        .empty-state {
-            text-align: center;
-            color: var(--text-muted);
-            font-style: italic;
-            padding: 25px 0;
-            font-size: 15px;
-        }
+  .modal-card {
+    background: var(--surface);
+    border: 1.5px solid #333;
+    border-radius: 20px;
+    padding: 24px 20px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
 
-        /* Disparador de Exportación Comercial */
-        .btn-submit {
-            background-color: var(--accent-color);
-            color: #000000;
-            border: none;
-            padding: 16px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(127, 255, 0, 0.2);
-            margin-top: 10px;
-        }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    color: var(--green);
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
 
-        .btn-submit:hover {
-            background-color: #6ed600;
-        }
+  .field-group {
+    margin-bottom: 18px;
+  }
 
-        .btn-submit:active {
-            transform: scale(0.99);
-        }
+  .field-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 8px;
+    display: block;
+  }
 
-        .btn-submit:disabled {
-            background-color: #333333;
-            color: #777777;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-    </style>
+  .field-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid #333;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 17px;
+    font-family: 'Barlow', sans-serif;
+    color: var(--white);
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .field-input:focus { border-color: var(--green); }
+  .field-input::placeholder { color: #555; }
+
+  textarea.field-input {
+    min-height: 90px;
+    resize: vertical;
+  }
+
+  /* Logo upload */
+  #logo-preview-wrap {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    border: 2px dashed #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    margin-bottom: 10px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  #logo-preview-wrap:active { border-color: var(--green); }
+  #logo-preview-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  #logo-preview-wrap .upload-icon { font-size: 32px; }
+  #logo-file-input { display: none; }
+
+  /* ── PERM SCREEN ── */
+  #perm-screen {
+    display: none;
+    text-align: center;
+    padding: 30px 20px;
+  }
+  #perm-screen.visible { display: block; }
+  #perm-screen .big-icon { font-size: 64px; margin-bottom: 16px; }
+  #perm-screen p { font-size: 16px; color: var(--gray); margin-bottom: 20px; line-height: 1.5; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fade-in 0.3s ease forwards; }
+
+  /* Accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
 </head>
 <body>
 
-    <div class="app-container">
-        
-        <header>
-            <div class="logo-title">LISTA<span>XVOZ</span></div>
-            <div class="badge">SISTEMA DE PRESUPUESTOS</div>
-        </header>
+<!-- ═══════════════════════════════════════ HEADER -->
+<header id="app-header">
+  <div>
+    <div id="app-title">Lista x Voz</div>
+    <div id="app-subtitle">Relevamiento de materiales</div>
+  </div>
+  <button id="profile-btn" onclick="openProfile()" title="Perfil">
+    <span id="profile-icon">👤</span>
+    <img id="profile-thumb" style="display:none">
+  </button>
+</header>
 
-        <div class="card">
-            <div class="form-group">
-                <label for="nombre-lista-input">Nombre o Título de la Lista</label>
-                <input type="text" id="nombre-lista-input" placeholder="Ej: Baño Principal, Materiales Electricidad">
-            </div>
+<!-- ═══════════════════════════════════════ MAIN -->
+<main id="main">
 
-            <div class="form-group">
-                <label>Datos Comerciales de la Empresa / Profesional</label>
-                <div id="datos-cliente-texto" class="datos-empresa-box" contenteditable="true" placeholder="Escribí acá tu Nombre, Teléfono, Email o Info del Cliente..."></div>
-            </div>
+  <!-- PERM REQUEST -->
+  <div id="perm-screen">
+    <div class="big-icon">🎙️</div>
+    <p>Esta app necesita acceso al micrófono para funcionar.<br>Tocá el botón para habilitar.</p>
+    <button class="btn btn-green" onclick="requestMicPermission()">🎤 Habilitar Micrófono</button>
+  </div>
 
-            <div class="form-group">
-                <label>Logotipo del Documento</label>
-                <div class="logo-upload-section">
-                    <div class="btn-upload">
-                        Subir Imagen Logo
-                        <input type="file" id="logo-input" accept="image/*">
-                    </div>
-                    <div class="preview-box">
-                        <img id="logo-preview" src="" alt="">
-                    </div>
-                </div>
-            </div>
-        </div>
+  <!-- STEP 1: NOMBRE DE LISTA -->
+  <div class="step-card fade-in" id="step1-card">
+    <div class="step-label">Paso 1 de 2</div>
+    <div class="step-title">¿Cómo se llama esta lista?</div>
 
-        <div class="card voice-section">
-            <div class="mic-button" id="mic-btn">🎤</div>
-            <div class="status-text" id="status-text">Micrófono inactivo. Presioná para dictar un material.</div>
-        </div>
-
-        <div class="card">
-            <label>Materiales e Ítems Registrados</label>
-            <div class="items-container" id="items-container">
-                <div class="empty-state">No hay ítems en la lista todavía. Dictá usando el micrófono.</div>
-            </div>
-        </div>
-
-        <button class="btn-submit" id="btn-pdf" disabled onclick="generarPDF()">Generar PDF Comercial</button>
-
+    <div class="transcript-box" id="name-transcript">
+      <span class="placeholder">Ej: "Materiales baño planta alta"</span>
     </div>
 
-    <script>
-        // --- CONTROLADOR DE ESTADO GLOBAL ---
-        let nombreLista = '';
-        let itemsLista = [];
+    <div class="mic-hint" id="name-hint">Tocá el micrófono y dictá el nombre</div>
+    <button class="mic-btn" id="name-mic-btn" onclick="toggleNameMic()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path d="M5 10a7 7 0 0 0 14 0M12 19v3M8 22h8"/>
+      </svg>
+    </button>
 
-        const nombreListaInput = document.getElementById('nombre-lista-input');
-        const datosClienteTexto = document.getElementById('datos-cliente-texto');
-        const logoInput = document.getElementById('logo-input');
-        const logoPreview = document.getElementById('logo-preview');
-        const micBtn = document.getElementById('mic-btn');
-        const statusText = document.getElementById('status-text');
-        const itemsContainer = document.getElementById('items-container');
-        const btnPdf = document.getElementById('btn-pdf');
+    <div class="btn-row">
+      <button class="btn btn-outline btn-small" onclick="clearName()">🗑 Borrar</button>
+      <button class="btn btn-green btn-small" id="confirm-name-btn" onclick="confirmName()" disabled>Confirmar →</button>
+    </div>
+  </div>
 
-        // Sincronización del Nombre de la Lista
-        nombreListaInput.addEventListener('input', (e) => {
-            nombreLista = e.target.value.trim();
-            actualizarEstadoBoton();
-        });
+  <!-- STEP 2: DICTADO DE MATERIALES -->
+  <div class="step-card fade-in" id="step2-card" style="display:none">
+    <div class="step-label">Paso 2 de 2</div>
+    <div class="step-title">Dictá los materiales</div>
 
-        // Procesamiento en Base64 seguro para inyección de Logotipos en PDF
-        logoInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    logoPreview.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+    <div class="transcript-box" id="items-transcript">
+      <span class="placeholder">Ej: "2 caños de media, 5 codos, 1 llave de paso..."</span>
+    </div>
 
-        // Actualización de UI del listado en pantalla
-        function renderItems() {
-            itemsContainer.innerHTML = '';
-            
-            if (itemsLista.length === 0) {
-                itemsContainer.innerHTML = '<div class="empty-state">No hay ítems en la lista todavía. Dictá usando el micrófono.</div>';
-                actualizarEstadoBoton();
-                return;
-            }
+    <div class="mic-hint" id="items-hint">Hablá de corrido — pausá para agregar</div>
+    <button class="mic-btn" id="items-mic-btn" onclick="toggleItemsMic()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path d="M5 10a7 7 0 0 0 14 0M12 19v3M8 22h8"/>
+      </svg>
+    </button>
 
-            itemsLista.forEach((item, index) => {
-                const row = document.createElement('div');
-                row.className = 'item-row';
-                row.innerHTML = `
-                    <span class="item-text">${item}</span>
-                    <button class="btn-delete" onclick="eliminarItem(${index})">✕</button>
-                `;
-                itemsContainer.appendChild(row);
-            });
+    <div class="btn-row">
+      <button class="btn btn-outline btn-small" onclick="clearItems()">🗑 Borrar</button>
+      <button class="btn btn-green btn-small" id="add-to-list-btn" onclick="addToList()" disabled>+ Agregar a lista</button>
+    </div>
 
-            actualizarEstadoBoton();
-        }
+    <button class="btn btn-outline" style="margin-top:10px" onclick="backToStep1()">← Cambiar nombre</button>
+  </div>
 
-        function eliminarItem(index) {
-            itemsLista.splice(index, 1);
-            renderItems();
-        }
+  <!-- RESULT LIST -->
+  <section id="list-section">
+    <div class="list-header-block">
+      <img id="profile-logo-display" alt="Logo">
+      <div id="profile-header"></div>
+      <div id="list-name-display"></div>
+    </div>
 
-        function actualizarEstadoBoton() {
-            if (nombreLista && itemsLista.length > 0) {
-                btnPdf.removeAttribute('disabled');
-            } else {
-                btnPdf.setAttribute('disabled', 'true');
-            }
-        }
+    <ul id="checklist"></ul>
 
-        // --- SISTEMA DE DICTADO POR VOZ INTEGRADO (OPTIMIZADO) ---
-        if ('webkitSpeechRecognition' in window || 'speechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'es-AR';
-            recognition.continuous = false;
-            recognition.interimResults = false;
+    <button class="btn btn-green" onclick="addMoreItems()" style="margin-bottom:10px">🎤 Agregar más ítems</button>
+    <button class="btn" id="whatsapp-btn" onclick="sendWhatsApp()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.08L2 22l4.93-1.29A9.93 9.93 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.85 14.15c-.2.56-1.17 1.08-1.61 1.13-.41.05-.93.07-1.5-.09-.34-.1-.78-.24-1.33-.47-2.32-.97-3.84-3.27-3.96-3.42-.12-.15-.96-1.28-.96-2.44 0-1.16.6-1.73.81-1.96.21-.23.46-.29.61-.29.16 0 .31.01.44.01.16.01.36-.06.56.43.2.49.68 1.67.74 1.79.06.12.1.26.02.41-.08.15-.12.24-.23.37-.12.13-.24.29-.35.39-.11.1-.23.22-.1.43.13.21.59.96 1.27 1.55.87.77 1.61 1.01 1.83 1.12.23.11.36.09.49-.06.13-.15.56-.65.71-.87.15-.22.3-.18.5-.11.2.07 1.28.61 1.5.72.22.11.36.17.42.26.05.1.05.58-.15 1.14z"/></svg>
+      Enviar a la Ferretería por WhatsApp
+    </button>
+    <button class="btn btn-outline" style="margin-top:10px" onclick="clearAll()">🗑 Nueva lista</button>
+  </section>
 
-            recognition.onstart = () => {
-                micBtn.classList.add('recording');
-                statusText.innerText = 'Escuchando activo... Dictá un material ahora';
-            };
+</main>
 
-            recognition.onend = () => {
-                micBtn.classList.remove('recording');
-                statusText.innerText = 'Micrófono inactivo. Presioná para volver a dictar';
-            };
+<!-- ═══════════════════════════════════════ STATUS BAR -->
+<div id="status-bar">Lista x Voz · Listo</div>
 
-            recognition.onresult = (event) => {
-                const texto = event.results[0][0].transcript.trim();
-                if (texto) {
-                    // Formateo estético inmediato (Primera letra Mayúscula)
-                    const textoFormateado = texto.charAt(0).toUpperCase() + texto.slice(1);
-                    itemsLista.push(textoFormateado);
-                    renderItems();
-                }
-            };
+<!-- ═══════════════════════════════════════ PROFILE MODAL -->
+<div id="profile-modal">
+  <div class="modal-card">
+    <div class="modal-title">👤 Mi Perfil</div>
 
-            recognition.onerror = (event) => {
-                console.error("Error capturado en Speech API: ", event.error);
-                statusText.innerText = 'Error al procesar voz. Volvé a intentar.';
-                micBtn.classList.remove('recording');
-            };
+    <div class="field-group">
+      <span class="field-label">Logo / Imagen</span>
+      <div id="logo-preview-wrap" onclick="document.getElementById('logo-file-input').click()">
+        <span class="upload-icon">📷</span>
+        <img id="logo-preview-img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:10px">
+      </div>
+      <input type="file" id="logo-file-input" accept="image/*" onchange="handleLogoUpload(event)">
+    </div>
 
-            micBtn.addEventListener('click', () => {
-                if (micBtn.classList.contains('recording')) {
-                    recognition.stop();
-                } else {
-                    recognition.start();
-                }
-            });
-        } else {
-            statusText.innerText = 'Reconocimiento de voz no soportado de forma nativa por este navegador.';
-            micBtn.style.opacity = '0.4';
-            micBtn.style.cursor = 'not-allowed';
-        }
+    <div class="field-group">
+      <label class="field-label" for="p-name">Nombre / Empresa</label>
+      <input class="field-input" id="p-name" type="text" placeholder="Juan Pérez Instalaciones">
+    </div>
 
-        // --- GENERACIÓN DE PDF COMERCIAL BLINDADA CONTRA HOJAS BLANCAS ---
-        function generarPDF() {
-            if (!nombreLista || itemsLista.length === 0) return;
+    <div class="field-group">
+      <label class="field-label" for="p-phone">📱 Teléfono</label>
+      <input class="field-input" id="p-phone" type="tel" placeholder="📱 +54 11 1234-5678">
+    </div>
 
-            // 1. Desactivar temporalmente el scroll animado para que no cause retrasos en la foto del lienzo
-            const estiloScrollOriginal = document.documentElement.style.scrollBehavior;
-            document.documentElement.style.scrollBehavior = 'auto';
+    <div class="field-group">
+      <label class="field-label" for="p-mail">✉️ Email</label>
+      <input class="field-input" id="p-mail" type="email" placeholder="✉️ juan@ejemplo.com">
+    </div>
 
-            // 2. Guardar la posición exacta del usuario y forzar salto instantáneo al top absoluto (0,0)
-            const posicionXOriginal = window.scrollX;
-            const posicionYOriginal = window.scrollY;
-            window.scrollTo(0, 0);
+    <div class="field-group">
+      <label class="field-label" for="p-tax">ID Fiscal (CUIT / RUT)</label>
+      <input class="field-input" id="p-tax" type="text" placeholder="20-12345678-9">
+    </div>
 
-            // 3. Cartel de bloqueo estético de renderizado
-            const cargando = document.createElement('div');
-            cargando.style.position = 'fixed';
-            cargando.style.top = '0';
-            cargando.style.left = '0';
-            cargando.style.width = '100vw';
-            cargando.style.height = '100vh';
-            cargando.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
-            cargando.style.color = '#7FFF00';
-            cargando.style.zIndex = '9999';
-            cargando.style.display = 'flex';
-            cargando.style.flexDirection = 'column';
-            cargando.style.justifyContent = 'center';
-            cargando.style.alignItems = 'center';
-            cargando.style.fontFamily = 'Arial, sans-serif';
-            cargando.innerHTML = `
-                <div style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">Generando PDF Comercial...</div>
-                <div style="font-size: 16px; color: #FFFFFF;">Por favor, esperá un momento.</div>
-            `;
-            document.body.appendChild(cargando);
+    <div class="field-group">
+      <label class="field-label" for="p-extra">Info adicional (redes, web, etc.)</label>
+      <textarea class="field-input" id="p-extra" placeholder="Instagram: @juanplomero&#10;Web: juaninstalaciones.com.ar&#10;WhatsApp: +54 11 1234-5678"></textarea>
+    </div>
 
-            const datosEmpresaSrc = datosClienteTexto.innerHTML;
-            const logoSrc = logoPreview.src;
-            
-            // 4. Contenedor temporal aislado montado arriba del DOM para asegurar renders perfectos
-            const pdfContainer = document.createElement('div');
-            pdfContainer.style.position = 'absolute';
-            pdfContainer.style.top = '0';
-            pdfContainer.style.left = '0';
-            pdfContainer.style.width = '750px'; 
-            pdfContainer.style.zIndex = '9000'; 
-            pdfContainer.style.backgroundColor = '#FFFFFF';
-            pdfContainer.style.color = '#000000';
-            pdfContainer.style.padding = '40px';
-            pdfContainer.style.boxSizing = 'border-box';
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="closeProfile()">Cancelar</button>
+      <button class="btn btn-green" onclick="saveProfile()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
 
-            let itemsHTML = '';
-            itemsLista.forEach(item => {
-                itemsHTML += `
-                    <div style="display: flex; align-items: center; padding: 14px 10px; border-bottom: 1px solid #E0E0E0; page-break-inside: avoid;">
-                        <div style="width: 18px; height: 18px; border: 2px solid #000000; margin-right: 15px; border-radius: 3px; background-color: #FFFFFF; flex-shrink: 0;"></div>
-                        <div style="font-size: 17px; color: #000000; font-weight: 500; word-break: break-word;">${item}</div>
-                    </div>
-                `;
-            });
+<!-- ═══════════════════════════════════════ SCRIPT -->
+<script>
+/* ─────────────────── STATE ─────────────────── */
+let listName = '';
+let listItems = [];
 
-            let logoHTML = '';
-            if(logoSrc && !logoSrc.endsWith('index.html') && logoSrc.length > 100) {
-                logoHTML = `<img src="${logoSrc}" style="max-width: 100px; max-height: 100px; object-fit: contain; border-radius: 5px;">`;
-            }
+let micGranted = false;      // true una sola vez, nunca vuelve a false
+let nameRecognition = null;
+let itemsRecognition = null;
+let nameListening = false;
+let itemsListening = false;
+let nameText = '';
+let itemsText = '';
 
-            pdfContainer.innerHTML = `
-                <div style="background-color: #000000; color: #FFFFFF; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #7FFF00; margin-bottom: 30px; border-radius: 4px;">
-                    <div style="font-size: 28px; font-weight: bold; letter-spacing: 0.5px;">LISTA<span style="color: #7FFF00;">XVOZ</span></div>
-                    <div style="font-size: 11px; text-align: right; font-weight: bold; color: #7FFF00;">DOCUMENTO COMERCIAL DE TRABAJO</div>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 35px; padding-bottom: 20px; border-bottom: 2px solid #F0F0F0;">
-                    <div style="font-size: 15px; line-height: 1.6; color: #333333;">${datosEmpresaSrc || "<span style='color:#999; font-style:italic;'>Lista de Materiales</span>"}</div>
-                    <div>${logoHTML}</div>
-                </div>
+let profile = JSON.parse(localStorage.getItem('lxv_profile') || '{}');
+let logoDataURL = localStorage.getItem('lxv_logo') || '';
 
-                <div style="font-size: 24px; font-weight: bold; color: #000000; margin-bottom: 30px; text-transform: uppercase; border-left: 6px solid #7FFF00; padding-left: 14px;">
-                    Lista: ${nombreLista.toUpperCase()}
-                </div>
-                
-                <div style="display: flex; flex-direction: column; width: 100%;">
-                    ${itemsHTML}
-                </div>
+/* ─────────────────── INIT ─────────────────── */
+window.addEventListener('load', () => {
+  loadProfile();
+  checkSpeechSupport();
+});
 
-                <div style="margin-top: 60px; text-align: center; font-size: 11px; color: #888888; border-top: 1px solid #E5E5E5; padding-top: 15px;">
-                    Generado automáticamente mediante la aplicación Lista x Voz
-                </div>
-            `;
-            
-            document.body.appendChild(pdfContainer);
+function checkSpeechSupport() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    setStatus('⚠️ Usá Chrome (Android) o Safari (iOS) para el dictado por voz.', false);
+    return;
+  }
+  // Mostrar pantalla de permiso: pedir una sola vez con getUserMedia
+  document.getElementById('perm-screen').classList.add('visible');
+  document.getElementById('step1-card').style.display = 'none';
+}
 
-            // Ajustes técnicos avanzados para la captura de html2pdf
-            const opciones = {
-                margin:       15,
-                filename:     `Lista_${nombreLista.replace(/\s+/g, '_')}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { 
-                    scale: 2, 
-                    backgroundColor: '#FFFFFF', 
-                    useCORS: true, 
-                    logging: false,
-                    scrollY: 0,
-                    scrollX: 0
-                },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+function requestMicPermission() {
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+      // Liberar el stream inmediatamente — solo necesitamos el grant
+      stream.getTracks().forEach(t => t.stop());
+      micGranted = true;
+      document.getElementById('perm-screen').classList.remove('visible');
+      document.getElementById('step1-card').style.display = 'block';
+      initRecognitions();
+      setStatus('✅ Micrófono habilitado', true);
+    })
+    .catch(() => {
+      setStatus('❌ Permiso denegado. Habilitá el micrófono en Ajustes del celular.', false);
+    });
+}
 
-            // 5. Retraso de renderizado controlado para dar holgura al motor del navegador antes de disparar la descarga
-            setTimeout(() => {
-                html2pdf().set(opciones).from(pdfContainer).save().then(() => {
-                    // Limpieza absoluta y devolución del scroll a la experiencia del usuario
-                    document.body.removeChild(pdfContainer);
-                    document.body.removeChild(cargando);
-                    window.scrollTo(posicionXOriginal, posicionYOriginal);
-                    document.documentElement.style.scrollBehavior = estiloScrollOriginal;
-                }).catch(err => {
-                    console.error("Error crítico de exportación PDF: ", err);
-                    document.body.removeChild(pdfContainer);
-                    document.body.removeChild(cargando);
-                    window.scrollTo(posicionXOriginal, posicionYOriginal);
-                    document.documentElement.style.scrollBehavior = estiloScrollOriginal;
-                });
-            }, 350);
-        }
-    </script>
+/* ─────────────────── RECOGNITION SETUP ─────────────────── */
+function makeRecognition(onResult, onEnd) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  rec.lang = 'es-AR';
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+  rec.onresult = onResult;
+  rec.onend = onEnd;
+  rec.onerror = (e) => {
+    // 'no-speech' y 'aborted' son normales — ignorar
+    // 'not-allowed' solo pasa si el usuario revocó el permiso desde ajustes
+    if (e.error === 'not-allowed') {
+      setStatus('❌ Permiso de micrófono revocado. Habilitalo en Ajustes.', false);
+    }
+    // No llamar showPermScreen nunca más desde acá
+  };
+  return rec;
+}
+
+function initRecognitions() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+
+  // ── NAME recognition ──
+  nameRecognition = makeRecognition(
+    // onresult
+    (e) => {
+      let final = '', interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      if (final) nameText += final;
+      const display = nameText + interim;
+      showTranscript('name-transcript', display || '');
+      document.getElementById('confirm-name-btn').disabled = !display.trim();
+    },
+    // onend — solo reinicia si nameListening sigue true
+    () => {
+      if (nameListening) {
+        setTimeout(() => {
+          if (nameListening) {
+            try { nameRecognition.start(); } catch(_) {}
+          }
+        }, 150);
+      } else {
+        setMicState('name', false);
+      }
+    }
+  );
+
+  // ── ITEMS recognition ──
+  itemsRecognition = makeRecognition(
+    // onresult
+    (e) => {
+      let final = '', interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      if (final) itemsText += final + ' ';
+      const display = itemsText + interim;
+      showTranscript('items-transcript', display || '');
+      document.getElementById('add-to-list-btn').disabled = !display.trim();
+    },
+    // onend
+    () => {
+      if (itemsListening) {
+        setTimeout(() => {
+          if (itemsListening) {
+            try { itemsRecognition.start(); } catch(_) {}
+          }
+        }, 150);
+      } else {
+        setMicState('items', false);
+      }
+    }
+  );
+}
+
+/* ─────────────────── NAME MIC ─────────────────── */
+function toggleNameMic() {
+  if (nameListening) {
+    // DETENER
+    nameListening = false;          // bajar flag ANTES de stop() para que onend no reinicie
+    nameRecognition.stop();
+    setMicState('name', false);
+    setStatus('Listo — confirmá el nombre', true);
+  } else {
+    // INICIAR
+    nameListening = true;
+    setMicState('name', true);
+    setStatus('🎤 Escuchando nombre...', true);
+    try { nameRecognition.start(); } catch(_) {}
+  }
+}
+
+/* ─────────────────── ITEMS MIC ─────────────────── */
+function toggleItemsMic() {
+  if (itemsListening) {
+    // DETENER
+    itemsListening = false;         // bajar flag ANTES de stop()
+    itemsRecognition.stop();
+    setMicState('items', false);
+    setStatus('Listo — agregá a la lista', true);
+  } else {
+    // INICIAR
+    itemsListening = true;
+    setMicState('items', true);
+    setStatus('🎤 Escuchando materiales...', true);
+    try { itemsRecognition.start(); } catch(_) {}
+  }
+}
+
+function setMicState(which, on) {
+  const btn = document.getElementById(which + '-mic-btn');
+  const box = document.getElementById(which + '-transcript');
+  if (on) {
+    btn.classList.add('listening');
+    box.classList.add('listening');
+  } else {
+    btn.classList.remove('listening');
+    box.classList.remove('listening');
+  }
+}
+
+/* ─────────────────── TRANSCRIPT DISPLAY ─────────────────── */
+function showTranscript(id, text) {
+  const el = document.getElementById(id);
+  if (text.trim()) {
+    el.innerHTML = capitalizeFirst(text.trim());
+  } else {
+    const placeholders = {
+      'name-transcript': 'Ej: "Materiales baño planta alta"',
+      'items-transcript': 'Ej: "2 caños de media, 5 codos, 1 llave de paso..."'
+    };
+    el.innerHTML = `<span class="placeholder">${placeholders[id]}</span>`;
+  }
+}
+
+function capitalizeFirst(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* ─────────────────── FLOW CONTROLS ─────────────────── */
+function clearName() {
+  if (nameListening) { nameListening = false; try { nameRecognition.stop(); } catch(e){} }
+  nameText = '';
+  showTranscript('name-transcript', '');
+  document.getElementById('confirm-name-btn').disabled = true;
+  setMicState('name', false);
+}
+
+function confirmName() {
+  if (!nameText.trim()) return;
+  // Detener mic de nombre limpiamente antes de pasar al paso 2
+  nameListening = false;
+  try { nameRecognition.stop(); } catch(_) {}
+  setMicState('name', false);
+
+  listName = capitalizeFirst(nameText.trim());
+  document.getElementById('step1-card').style.display = 'none';
+  document.getElementById('step2-card').style.display = 'block';
+  document.getElementById('step2-card').classList.add('fade-in');
+  setStatus('Nombre confirmado: ' + listName, true);
+}
+
+function backToStep1() {
+  if (itemsListening) { itemsListening = false; try { itemsRecognition.stop(); } catch(e){} }
+  document.getElementById('step2-card').style.display = 'none';
+  document.getElementById('step1-card').style.display = 'block';
+  setMicState('items', false);
+}
+
+function clearItems() {
+  if (itemsListening) { itemsListening = false; try { itemsRecognition.stop(); } catch(e){} }
+  itemsText = '';
+  showTranscript('items-transcript', '');
+  document.getElementById('add-to-list-btn').disabled = true;
+  setMicState('items', false);
+}
+
+function addToList() {
+  if (!itemsText.trim()) return;
+  // Detener mic limpiamente
+  itemsListening = false;
+  try { itemsRecognition.stop(); } catch(_) {}
+  setMicState('items', false);
+
+  const raw = itemsText.trim();
+  const parsed = parseItems(raw);
+  listItems = listItems.concat(parsed);
+  itemsText = '';
+  showTranscript('items-transcript', '');
+  document.getElementById('add-to-list-btn').disabled = true;
+  renderList();
+  document.getElementById('step2-card').style.display = 'none';
+  document.getElementById('list-section').classList.add('visible');
+  setStatus('✅ Lista actualizada', true);
+}
+
+function addMoreItems() {
+  document.getElementById('list-section').classList.remove('visible');
+  document.getElementById('step2-card').style.display = 'block';
+  itemsText = '';
+  showTranscript('items-transcript', '');
+  document.getElementById('add-to-list-btn').disabled = true;
+  setStatus('Dictá más materiales', true);
+}
+
+function clearAll() {
+  if (confirm('¿Empezar una lista nueva? Se borrará todo.')) {
+    listName = ''; listItems = []; nameText = ''; itemsText = '';
+    showTranscript('name-transcript', '');
+    showTranscript('items-transcript', '');
+    document.getElementById('confirm-name-btn').disabled = true;
+    document.getElementById('add-to-list-btn').disabled = true;
+    document.getElementById('list-section').classList.remove('visible');
+    document.getElementById('step2-card').style.display = 'none';
+    document.getElementById('step1-card').style.display = 'block';
+    document.getElementById('checklist').innerHTML = '';
+    setStatus('Lista nueva', false);
+  }
+}
+
+/* ─────────────────── PARSE ITEMS ─────────────────── */
+function parseItems(text) {
+  // Split on: comma, "y también", "también", numbers starting new item, period
+  let parts = text.split(/[,\.;]+|\s+y\s+también\s+|\s+también\s+/i);
+  const results = [];
+  parts.forEach(p => {
+    p = p.trim();
+    if (p.length > 1) {
+      results.push(capitalizeFirst(p));
+    }
+  });
+  return results.length ? results : [capitalizeFirst(text)];
+}
+
+/* ─────────────────── RENDER LIST ─────────────────── */
+function renderList() {
+  // Header
+  document.getElementById('list-name-display').textContent = listName;
+  renderProfileHeader();
+
+  const ul = document.getElementById('checklist');
+  ul.innerHTML = '';
+  listItems.forEach((item, i) => {
+    const li = document.createElement('li');
+    li.dataset.index = i;
+    li.innerHTML = `
+      <div class="check-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <span>${item}</span>
+    `;
+    li.onclick = () => li.classList.toggle('checked');
+    ul.appendChild(li);
+  });
+}
+
+/* ─────────────────── WHATSAPP ─────────────────── */
+function sendWhatsApp() {
+  if (!listItems.length) { setStatus('No hay ítems en la lista', false); return; }
+
+  let msg = `*${listName}*\n`;
+
+  // Add profile info if available
+  if (profile.name) msg += `_${profile.name}_\n`;
+  if (profile.phone) msg += `📱 ${profile.phone}\n`;
+  if (profile.mail) msg += `✉️ ${profile.mail}\n`;
+  if (profile.tax) msg += `ID Fiscal: ${profile.tax}\n`;
+  if (profile.extra) msg += `${profile.extra}\n`;
+  msg += '\n';
+
+  msg += '*MATERIALES SOLICITADOS:*\n';
+  listItems.forEach((item, i) => {
+    msg += `☐ ${item}\n`;
+  });
+  msg += `\n_Enviado con Lista x Voz_`;
+
+  const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
+
+/* ─────────────────── STATUS ─────────────────── */
+function setStatus(msg, active) {
+  const bar = document.getElementById('status-bar');
+  bar.textContent = msg;
+  bar.className = active ? 'active' : '';
+}
+
+/* ─────────────────── PROFILE ─────────────────── */
+function openProfile() {
+  // Fill form from saved profile
+  document.getElementById('p-name').value = profile.name || '';
+  document.getElementById('p-phone').value = profile.phone || '';
+  document.getElementById('p-mail').value = profile.mail || '';
+  document.getElementById('p-tax').value = profile.tax || '';
+  document.getElementById('p-extra').value = profile.extra || '';
+  if (logoDataURL) {
+    document.getElementById('logo-preview-img').src = logoDataURL;
+    document.getElementById('logo-preview-img').style.display = 'block';
+    document.getElementById('logo-preview-wrap').querySelector('.upload-icon').style.display = 'none';
+  }
+  document.getElementById('profile-modal').classList.add('open');
+}
+
+function closeProfile() {
+  document.getElementById('profile-modal').classList.remove('open');
+}
+
+function saveProfile() {
+  profile = {
+    name: document.getElementById('p-name').value.trim(),
+    phone: document.getElementById('p-phone').value.trim(),
+    mail: document.getElementById('p-mail').value.trim(),
+    tax: document.getElementById('p-tax').value.trim(),
+    extra: document.getElementById('p-extra').value.trim(),
+  };
+  localStorage.setItem('lxv_profile', JSON.stringify(profile));
+  if (logoDataURL) localStorage.setItem('lxv_logo', logoDataURL);
+  updateProfileThumb();
+  closeProfile();
+  renderProfileHeader();
+  setStatus('✅ Perfil guardado', true);
+}
+
+function loadProfile() {
+  profile = JSON.parse(localStorage.getItem('lxv_profile') || '{}');
+  logoDataURL = localStorage.getItem('lxv_logo') || '';
+  updateProfileThumb();
+}
+
+function updateProfileThumb() {
+  const thumb = document.getElementById('profile-thumb');
+  const icon = document.getElementById('profile-icon');
+  if (logoDataURL) {
+    thumb.src = logoDataURL;
+    thumb.style.display = 'block';
+    icon.style.display = 'none';
+  } else {
+    thumb.style.display = 'none';
+    icon.style.display = 'block';
+  }
+}
+
+function renderProfileHeader() {
+  const ph = document.getElementById('profile-header');
+  const logo = document.getElementById('profile-logo-display');
+  const hasAny = profile.name || profile.phone || profile.mail || profile.tax || profile.extra;
+
+  if (logoDataURL) {
+    logo.src = logoDataURL;
+    logo.classList.add('visible');
+  } else {
+    logo.classList.remove('visible');
+  }
+
+  if (hasAny) {
+    let html = '';
+    if (profile.name) html += `<strong style="font-size:15px;color:#fff">${profile.name}</strong><br>`;
+    if (profile.phone) html += `📱 ${profile.phone}<br>`;
+    if (profile.mail) html += `✉️ ${profile.mail}<br>`;
+    if (profile.tax) html += `ID Fiscal: ${profile.tax}<br>`;
+    if (profile.extra) html += `<span style="white-space:pre-line">${profile.extra}</span>`;
+    ph.innerHTML = html;
+    ph.classList.add('has-data');
+  } else {
+    ph.classList.remove('has-data');
+  }
+}
+
+function handleLogoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    logoDataURL = ev.target.result;
+    document.getElementById('logo-preview-img').src = logoDataURL;
+    document.getElementById('logo-preview-img').style.display = 'block';
+    document.getElementById('logo-preview-wrap').querySelector('.upload-icon').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// Close modal on backdrop tap
+document.getElementById('profile-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeProfile();
+});
+</script>
 </body>
 </html>
