@@ -248,4 +248,47 @@
     align-items: flex-start;
     gap: 14px;
     padding: 14px 0;
-    border-bottom:
+    border-bottom: 1px solid #222;
+    font-size: 18px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  #checklist li:last-child { border-bottom: none; }
+  #checklist li.checked { opacity: 0.5; text-decoration: line-through; color: var(--gray); }
+
+  .check-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2.5px solid var(--green);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    transition: background 0.15s;
+  }
+  li.checked .check-box { background: var(--green); }
+  .check-box svg { display: none; }
+  li.checked .check-box svg { display: block; }
+
+  #status-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid #222;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--gray);
+    text-align: center;
+    z-index: 40;
+  }
+  #status-bar.active { color: var(--green); }
+
+  #profile-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
