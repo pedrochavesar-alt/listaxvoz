@@ -413,6 +413,44 @@
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
+  /* ── STICKY MIC BAR (step2 en modo lista) ── */
+  #step2-card.mic-bar {
+    position: fixed;
+    bottom: 44px; /* encima del status bar */
+    left: 0; right: 0;
+    margin: 0;
+    border-radius: 0;
+    border-left: none; border-right: none; border-bottom: none;
+    border-top: 2px solid var(--green);
+    background: #0a0a0a;
+    z-index: 30;
+    padding: 12px 16px;
+    display: flex !important;
+    align-items: center;
+    gap: 14px;
+  }
+  #step2-card.mic-bar .step-label,
+  #step2-card.mic-bar .step-title,
+  #step2-card.mic-bar #items-hint,
+  #step2-card.mic-bar .btn { display: none !important; }
+  #step2-card.mic-bar #items-transcript {
+    flex: 1;
+    margin: 0;
+    min-height: 44px;
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+  #step2-card.mic-bar .mic-btn {
+    width: 60px;
+    height: 60px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+  #step2-card.mic-bar .mic-btn svg { width: 30px; height: 30px; }
+
+  /* Ajuste del padding inferior del main cuando la barra está fija */
+  body.listing #main { padding-bottom: 160px; }
+
   /* ── X DELETE BTN ── */
   .item-delete {
     margin-left: auto;
@@ -521,16 +559,15 @@
 
     <ul id="checklist"></ul>
 
-    <button class="btn btn-green" onclick="addMoreItems()" style="margin-bottom:10px">🎤 Agregar más ítems</button>
-    <button class="btn" id="pdf-btn" onclick="exportPDF()">
+    <button class="btn" id="pdf-btn" onclick="exportPDF()" style="margin-bottom:10px">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
       Exportar PDF
     </button>
-    <button class="btn" id="whatsapp-btn" onclick="sendWhatsApp()" style="margin-top:10px">
+    <button class="btn" id="whatsapp-btn" onclick="sendWhatsApp()" style="margin-bottom:10px">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.08L2 22l4.93-1.29A9.93 9.93 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.85 14.15c-.2.56-1.17 1.08-1.61 1.13-.41.05-.93.07-1.5-.09-.34-.1-.78-.24-1.33-.47-2.32-.97-3.84-3.27-3.96-3.42-.12-.15-.96-1.28-.96-2.44 0-1.16.6-1.73.81-1.96.21-.23.46-.29.61-.29.16 0 .31.01.44.01.16.01.36-.06.56.43.2.49.68 1.67.74 1.79.06.12.1.26.02.41-.08.15-.12.24-.23.37-.12.13-.24.29-.35.39-.11.1-.23.22-.1.43.13.21.59.96 1.27 1.55.87.77 1.61 1.01 1.83 1.12.23.11.36.09.49-.06.13-.15.56-.65.71-.87.15-.22.3-.18.5-.11.2.07 1.28.61 1.5.72.22.11.36.17.42.26.05.1.05.58-.15 1.14z"/></svg>
       Enviar por WhatsApp
     </button>
-    <button class="btn btn-outline" style="margin-top:10px" onclick="clearAll()">🗑 Nueva lista</button>
+    <button class="btn btn-outline" onclick="clearAll()">🗑 Nueva lista</button>
   </section>
 
 </main>
@@ -738,14 +775,21 @@ function toggleNameMic() {
 /* ─────────────────── ITEMS MIC ─────────────────── */
 function toggleItemsMic() {
   if (itemsListening) {
-    // DETENER + AGREGAR A LISTA (mic = Enter)
+    // DETENER + AGREGAR inmediato
     itemsListening = false;
     itemsRecognition.stop();
     setMicState('items', false);
-    // Esperar brevemente para que el último resultado final llegue antes de agregar
     setTimeout(() => {
       if (itemsText.trim()) {
-        addToList();
+        const parsed = parseItems(itemsText.trim());
+        listItems = listItems.concat(parsed);
+        itemsText = '';
+        showTranscript('items-transcript', '');
+        renderList();
+        // Mostrar lista si no está visible
+        document.getElementById('list-section').classList.add('visible');
+        // Mantener step2 visible encima para seguir dictando
+        setStatus('✅ Agregado — tocá el mic para el siguiente ítem', true);
       } else {
         setStatus('No se detectó texto. Intentá de nuevo.', false);
       }
@@ -802,16 +846,24 @@ function clearName() {
 
 function confirmName() {
   if (!nameText.trim()) return;
-  // Detener mic de nombre limpiamente antes de pasar al paso 2
   nameListening = false;
   try { nameRecognition.stop(); } catch(_) {}
   setMicState('name', false);
 
   listName = capitalizeFirst(nameText.trim());
+
+  // Pasar al modo "listing": step1 se va, step2 se convierte en barra fija
   document.getElementById('step1-card').style.display = 'none';
-  document.getElementById('step2-card').style.display = 'block';
-  document.getElementById('step2-card').classList.add('fade-in');
-  setStatus('Nombre confirmado: ' + listName, true);
+  const step2 = document.getElementById('step2-card');
+  step2.style.display = 'flex';
+  step2.classList.add('mic-bar');
+  document.body.classList.add('listing');
+
+  // Mostrar la lista (vacía por ahora)
+  document.getElementById('list-section').classList.add('visible');
+  renderList();
+
+  setStatus('Tocá el mic y dictá cada ítem', true);
 }
 
 function backToStep1() {
@@ -865,10 +917,13 @@ function clearAll() {
     setMicState('name', false);
     setMicState('items', false);
     document.getElementById('list-section').classList.remove('visible');
-    document.getElementById('step2-card').style.display = 'none';
+    const step2 = document.getElementById('step2-card');
+    step2.style.display = 'none';
+    step2.classList.remove('mic-bar');
+    document.body.classList.remove('listing');
     document.getElementById('step1-card').style.display = 'block';
     document.getElementById('checklist').innerHTML = '';
-    setStatus('Lista nueva', false);
+    setStatus('Lista nueva — ingresá el nombre', false);
   }
 }
 
@@ -953,109 +1008,121 @@ function sendWhatsApp() {
 /* ─────────────────── EXPORT PDF ─────────────────── */
 async function exportPDF() {
   if (!listItems.length) { setStatus('No hay ítems para exportar', false); return; }
-
   setStatus('⏳ Generando PDF...', true);
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW = 210, pageH = 297, margin = 14, contentW = pageW - margin * 2;
 
-  const pageW = 210;
-  const pageH = 297;
-  const margin = 14;
-  const contentW = pageW - margin * 2;
-
-  // ── ENCABEZADO NEGRO ──
+  // ── HEADER ──
   doc.setFillColor(0, 0, 0);
-  doc.rect(0, 0, pageW, 38, 'F');
-
-  // Franja verde inferior del header
+  doc.rect(0, 0, pageW, 40, 'F');
   doc.setFillColor(127, 255, 0);
-  doc.rect(0, 36, pageW, 3, 'F');
+  doc.rect(0, 38, pageW, 3, 'F');
 
-  // Título "Lista x Voz"
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(26);
+  doc.setFontSize(28);
   doc.setTextColor(127, 255, 0);
-  doc.text('Lista x Voz', margin, 24);
+  doc.text('Lista x Voz', margin, 25);
 
-  // Subtítulo
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(150, 150, 150);
-  doc.text('Relevamiento de materiales', margin, 32);
+  doc.text('Relevamiento de materiales', margin, 34);
 
-  // Fecha en el header (derecha)
   const now = new Date();
   const fecha = now.toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
   doc.setFontSize(9);
   doc.setTextColor(180, 180, 180);
-  doc.text(fecha, pageW - margin, 24, { align: 'right' });
+  doc.text(fecha, pageW - margin, 25, { align: 'right' });
 
-  let y = 48;
+  let y = 50;
 
-  // ── LOGO DEL PERFIL (si existe) ──
+  // ── LOGO (arriba a la derecha del bloque de perfil) ──
+  let logoW = 0;
   if (logoDataURL) {
     try {
-      const imgW = 28;
-      const imgH = 28;
-      doc.addImage(logoDataURL, 'JPEG', pageW - margin - imgW, y, imgW, imgH);
-    } catch(_) {}
+      // Detectar formato real desde el dataURL
+      const fmt = logoDataURL.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+      logoW = 30;
+      const logoH = 30;
+      doc.addImage(logoDataURL, fmt, pageW - margin - logoW, y, logoW, logoH);
+    } catch(e) { logoW = 0; }
   }
 
-  // ── DATOS DE PERFIL ──
+  // ── PERFIL ──
   const hasProfile = profile.name || profile.phone || profile.mail || profile.tax || profile.extra;
   if (hasProfile) {
-    doc.setFillColor(18, 18, 18);
-    const profileBoxH = 
-      (profile.name ? 7 : 0) +
-      (profile.phone ? 6 : 0) +
-      (profile.mail ? 6 : 0) +
-      (profile.tax ? 6 : 0) +
-      (profile.extra ? 6 * (profile.extra.split('\n').length) : 0) + 8;
-    doc.roundedRect(margin, y, contentW, profileBoxH, 2, 2, 'F');
+    // Calcular altura dinámica
+    let boxH = 6; // padding top
+    if (profile.name)  boxH += 8;
+    if (profile.phone) boxH += 6;
+    if (profile.mail)  boxH += 6;
+    if (profile.tax)   boxH += 6;
+    if (profile.extra) {
+      const stripped = profile.extra.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim();
+      if (stripped) boxH += 6 * (stripped.split('\n').length);
+    }
+    boxH += 4; // padding bottom
 
-    let py = y + 7;
+    doc.setFillColor(22, 22, 22);
+    doc.roundedRect(margin, y, contentW, boxH, 2, 2, 'F');
+
+    let py = y + 10;
+    const textW = logoW > 0 ? contentW - logoW - 6 : contentW - 8;
+
     if (profile.name) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(255, 255, 255);
-      doc.text(profile.name, margin + 4, py);
-      py += 7;
+      doc.text(profile.name, margin + 5, py, { maxWidth: textW });
+      py += 8;
     }
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(180, 180, 180);
-    if (profile.phone) { doc.text('Tel: ' + profile.phone, margin + 4, py); py += 6; }
-    if (profile.mail)  { doc.text('Mail: ' + profile.mail, margin + 4, py); py += 6; }
-    if (profile.tax)   { doc.text('ID Fiscal: ' + profile.tax, margin + 4, py); py += 6; }
-    if (profile.extra) {
-      const extraLines = profile.extra.split('\n');
-      extraLines.forEach(line => { doc.text(line, margin + 4, py); py += 6; });
+
+    if (profile.phone) {
+      doc.text('Tel: ' + profile.phone, margin + 5, py);
+      py += 6;
     }
-    y += profileBoxH + 6;
+    if (profile.mail) {
+      doc.text('Mail: ' + profile.mail, margin + 5, py);
+      py += 6;
+    }
+    if (profile.tax) {
+      doc.text('ID Fiscal: ' + profile.tax, margin + 5, py);
+      py += 6;
+    }
+    if (profile.extra) {
+      // Eliminar emojis que jsPDF no puede renderizar
+      const stripped = profile.extra.replace(/[\u{1F000}-\u{1FFFF}]|\u2600-\u27BF/gu, '').trim();
+      if (stripped) {
+        stripped.split('\n').forEach(line => {
+          doc.text(line, margin + 5, py, { maxWidth: textW });
+          py += 6;
+        });
+      }
+    }
+
+    y += boxH + 8;
   }
 
-  // ── NOMBRE DE LA LISTA ──
-  doc.setFillColor(127, 255, 0);
-  doc.rect(margin, y, 4, 12, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(0, 0, 0);
-  // nombre en blanco sobre fondo negro
+  // ── NOMBRE DE LISTA ──
   doc.setFillColor(20, 20, 20);
   doc.roundedRect(margin, y, contentW, 14, 2, 2, 'F');
+  doc.setFillColor(127, 255, 0);
+  doc.rect(margin, y, 4, 14, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
   doc.setTextColor(255, 255, 255);
   doc.text(listName, margin + 8, y + 9.5);
   y += 20;
 
   // ── ITEMS ──
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-
   listItems.forEach((item, i) => {
-    // Nueva página si no entra
     if (y > pageH - 20) {
       doc.addPage();
-      // Mini header en páginas extras
       doc.setFillColor(0, 0, 0);
       doc.rect(0, 0, pageW, 12, 'F');
       doc.setFillColor(127, 255, 0);
@@ -1067,32 +1134,34 @@ async function exportPDF() {
       y = 20;
     }
 
-    // Fila alternada
     if (i % 2 === 0) {
-      doc.setFillColor(245, 245, 245);
-      doc.rect(margin, y - 5, contentW, 9, 'F');
+      doc.setFillColor(246, 246, 246);
+      doc.rect(margin, y - 5.5, contentW, 9, 'F');
     }
 
-    // Checkbox cuadrado
+    // Checkbox
     doc.setDrawColor(127, 255, 0);
-    doc.setLineWidth(0.6);
-    doc.rect(margin + 1, y - 4, 5, 5);
+    doc.setLineWidth(0.7);
+    doc.rect(margin + 1, y - 4.5, 5, 5);
 
-    // Número + texto
-    doc.setTextColor(150, 150, 150);
+    // Número
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
+    doc.setTextColor(160, 160, 160);
     doc.text(String(i + 1).padStart(2, '0'), margin + 8, y);
 
-    doc.setTextColor(20, 20, 20);
+    // Texto
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
-    const lines = doc.splitTextToSize(item, contentW - 20);
-    doc.text(lines, margin + 16, y);
-
-    y += lines.length > 1 ? lines.length * 5 + 3 : 9;
+    doc.setTextColor(20, 20, 20);
+    const lines = doc.splitTextToSize(item, contentW - 22);
+    doc.text(lines, margin + 17, y);
+    y += lines.length > 1 ? lines.length * 5.5 + 2 : 9;
   });
 
   // ── PIE ──
   y += 6;
+  if (y > pageH - 14) { doc.addPage(); y = 20; }
   doc.setDrawColor(127, 255, 0);
   doc.setLineWidth(0.5);
   doc.line(margin, y, pageW - margin, y);
@@ -1103,8 +1172,11 @@ async function exportPDF() {
   doc.text('Generado con Lista x Voz  ·  ' + fecha, margin, y);
   doc.text('Total: ' + listItems.length + ' ítem(s)', pageW - margin, y, { align: 'right' });
 
-  // ── GUARDAR ──
-  const filename = (listName || 'lista').replace(/[^a-zA-Z0-9áéíóúñ ]/g, '').trim().replace(/ /g, '_') + '_' + fecha.replace(/\//g, '-') + '.pdf';
+  const filename = (listName || 'lista')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 ]/g, '').trim()
+    .replace(/ +/g, '_')
+    + '_' + fecha.replace(/\//g, '-') + '.pdf';
   doc.save(filename);
   setStatus('✅ PDF descargado', true);
 }
@@ -1145,8 +1217,10 @@ function saveProfile() {
   localStorage.setItem('lxv_profile', JSON.stringify(profile));
   if (logoDataURL) localStorage.setItem('lxv_logo', logoDataURL);
   updateProfileThumb();
-  closeProfile();
-  renderProfileHeader();
+  // Actualizar header de la lista si ya hay una activa
+  if (listItems.length || listName) renderProfileHeader();
+  // Cerrar modal
+  document.getElementById('profile-modal').classList.remove('open');
   setStatus('✅ Perfil guardado', true);
 }
 
