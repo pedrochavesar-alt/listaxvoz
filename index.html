@@ -280,17 +280,20 @@
             font-size: 16px;
         }
 
-        /* --- 📄 TRUCO TÉCNICO: MAQUETA DE PDF EN COORDENADAS NEGATIVAS (INVISIBLE AL OJO, REAL PARA EL MOTOR) --- */
+        /* --- 📄 ESTILOS EXCLUSIVOS PARA LA HOJA DE IMPRESIÓN PDF --- */
         #espejo-pdf-render {
-            position: absolute;
-            left: -9999px;
-            top: -9999px;
-            width: 700px;
+            width: 794px; /* Ancho real proporcional para renderizado A4 */
             background-color: #FFFFFF !important;
             color: #000000 !important;
-            padding: 30px;
+            padding: 40px;
             font-family: Arial, sans-serif;
+            box-sizing: border-box;
         }
+
+        /* Fuerza textos oscuros legibles en la hoja blanca */
+        #espejo-pdf-render .pdf-texto-item { color: #000000 !important; }
+        #espejo-pdf-render .pdf-datos-vendedor { color: #333333 !important; }
+        #espejo-pdf-render .pdf-titulo-documento { color: #000000 !important; }
 
         .pdf-banner-app {
             background-color: #000000;
@@ -308,6 +311,7 @@
             font-size: 28px;
             font-weight: bold;
             letter-spacing: 1px;
+            color: #FFFFFF;
         }
 
         .pdf-banner-app .marca-txt span {
@@ -411,19 +415,21 @@
         Nueva Lista / Borrar Todo
     </button>
 
-    <div id="espejo-pdf-render">
-        <div class="pdf-banner-app">
-            <div class="marca-txt">LISTA<span>XVOZ</span></div>
-            <div style="font-size: 12px; text-align: right; opacity: 0.9; font-weight: bold;">Documento Comercial de Trabajo</div>
-        </div>
-        
-        <div class="pdf-bloque-comercial">
-            <div id="pdf-datos-empresa" class="pdf-datos-vendedor"></div>
-            <img id="pdf-logo-empresa" class="pdf-logo-comercial" src="" alt="" style="display: none;">
-        </div>
+    <div style="position: absolute; left: 0; top: 0; width: 100%; height: 0; overflow: hidden; z-index: -1;">
+        <div id="espejo-pdf-render">
+            <div class="pdf-banner-app">
+                <div class="marca-txt">LISTA<span>XVOZ</span></div>
+                <div style="font-size: 12px; text-align: right; opacity: 0.9; font-weight: bold; color: #FFFFFF !important;">Documento Comercial de Trabajo</div>
+            </div>
+            
+            <div class="pdf-bloque-comercial">
+                <div id="pdf-datos-empresa" class="pdf-datos-vendedor"></div>
+                <img id="pdf-logo-empresa" class="pdf-logo-comercial" src="" alt="" style="display: none;">
+            </div>
 
-        <div id="pdf-titulo-lista" class="pdf-titulo-documento"></div>
-        <div id="pdf-contenedor-items" class="pdf-contenedor-items"></div>
+            <div id="pdf-titulo-lista" class="pdf-titulo-documento"></div>
+            <div id="pdf-contenedor-items" class="pdf-contenedor-items"></div>
+        </div>
     </div>
 
     <div id="modal-perfil">
