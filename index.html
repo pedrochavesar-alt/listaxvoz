@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Presu x Voz</title>
+    <title>Lista x Voz</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* --- ESTILOS DE ALTO CONTRASTE PARA TRABAJO DE CAMPO (NARANJA Y NEGRO) --- */
+        /* --- ESTILOS DE ALTO CONTRASTE ORIGINALES (VERDE LIMA Y NEGRO) --- */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -29,17 +29,17 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            border-bottom: 2px solid #FF6B00;
+            border-bottom: 2px solid #7FFF00;
             padding-bottom: 10px;
         }
 
         h1 {
-            font-size: 28px;
+            font-size: 32px;
             color: #FFFFFF;
             font-weight: bold;
         }
         h1 span {
-            color: #FF6B00;
+            color: #7FFF00;
         }
 
         /* --- PERFIL DE USUARIO --- */
@@ -65,7 +65,7 @@
         }
 
         .modal-content {
-            border: 3px solid #FF6B00;
+            border: 3px solid #7FFF00;
             padding: 20px;
             border-radius: 10px;
             background-color: #111111;
@@ -74,7 +74,7 @@
         .modal-content h2 {
             font-size: 24px;
             margin-bottom: 15px;
-            color: #FF6B00;
+            color: #7FFF00;
         }
 
         .form-group {
@@ -99,7 +99,7 @@
         }
 
         .form-group input:focus, .form-group textarea:focus {
-            border-color: #FF6B00;
+            border-color: #7FFF00;
             outline: none;
         }
 
@@ -122,7 +122,7 @@
             margin-bottom: 20px;
             font-size: 16px;
             line-height: 1.4;
-            border-left: 4px solid #FF6B00;
+            border-left: 4px solid #7FFF00;
             padding-left: 10px;
             display: flex;
             align-items: center;
@@ -138,17 +138,16 @@
         }
 
         #indicador-paso {
-            font-size: 18px;
-            color: #FF6B00;
+            font-size: 20px;
+            color: #7FFF00;
             text-align: center;
             margin-bottom: 15px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         #titulo-lista-actual {
-            font-size: 22px;
+            font-size: 24px;
             text-align: center;
             margin-bottom: 15px;
             color: #FFFFFF;
@@ -157,7 +156,7 @@
             font-weight: bold;
         }
 
-        /* --- CHECKLIST EN VIVO --- */
+        /* --- FILAS DE MATERIALES --- */
         .item-material {
             display: flex;
             align-items: center;
@@ -178,7 +177,7 @@
             height: 28px;
             margin-right: 15px;
             cursor: pointer;
-            accent-color: #FF6B00;
+            accent-color: #7FFF00;
             flex-shrink: 0;
         }
 
@@ -222,7 +221,7 @@
         }
 
         #input-manual:focus {
-            border-color: #FF6B00;
+            border-color: #7FFF00;
             outline: none;
         }
 
@@ -239,12 +238,12 @@
 
         /* --- MONITOR Y CONTROL DE AUDIO --- */
         #transcripcion-tiempo-real {
-            font-size: 18px;
+            font-size: 20px;
             color: #A0A0A0;
             font-style: italic;
             text-align: center;
             min-height: 45px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             padding: 5px 10px;
         }
 
@@ -252,20 +251,20 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 10px 0 20px 0;
+            margin: 15px 0;
         }
 
         .btn-mic {
-            background-color: #FF6B00;
+            background-color: #7FFF00;
             border: none;
-            width: 100px;
-            height: 100px;
+            width: 110px;
+            height: 110px;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(255, 107, 0, 0.4);
+            box-shadow: 0 0 15px rgba(127, 255, 0, 0.4);
         }
 
         .btn-mic.escuchando {
@@ -274,8 +273,8 @@
         }
 
         .btn-mic svg {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             fill: #000000;
         }
 
@@ -291,7 +290,7 @@
 
         /* --- BOTONES DE ACCIÓN --- */
         .btn-accion {
-            background-color: #FF6B00;
+            background-color: #7FFF00;
             color: #000000;
             font-size: 20px;
             font-weight: bold;
@@ -320,11 +319,11 @@
 <body>
 
     <header>
-        <h1>Presu<span>xVoz</span></h1>
+        <h1>Lista<span>xVoz</span></h1>
         <button class="btn-perfil" onclick="abrirPerfil()" aria-label="Perfil">👤</button>
     </header>
 
-    <div id="indicador-paso">Paso 1: Dictá el Nombre del Ambiente o Lista</div>
+    <div id="indicador-paso">Paso 1: Dictá el Nombre de la Lista</div>
 
     <div id="contenedor-resultado">
         <div id="header-cliente" style="display: none;">
@@ -340,7 +339,7 @@
         <button class="btn-add-manual" onclick="agregarItemManual()">+</button>
     </div>
 
-    <div id="transcripcion-tiempo-real">Presioná el micrófono naranja para hablar...</div>
+    <div id="transcripcion-tiempo-real">Presioná el micrófono para hablar...</div>
 
     <div class="contenedor-mic">
         <button id="btn-grabar" class="btn-mic" onclick="alternarDictado()">
@@ -367,7 +366,7 @@
             </div>
             <div class="form-group">
                 <label>Nombre / Empresa:</label>
-                <input type="text" id="p-nombre" placeholder="Ej: Constructora Escorpion">
+                <input type="text" id="p-nombre" placeholder="Ej: Electricidad Oeste">
             </div>
             <div class="form-group">
                 <label>📱 Teléfono Celular:</label>
@@ -383,7 +382,7 @@
             </div>
             <div class="form-group">
                 <label>📝 Información Adicional:</label>
-                <textarea id="p-adicional" placeholder="Dirección, horarios o notas adicionales..."></textarea>
+                <textarea id="p-adicional" placeholder="Dirección del taller, horarios..."></textarea>
             </div>
             <button class="btn-accion" onclick="guardarPerfil()">Guardar Datos</button>
             <button class="btn-accion btn-secundario" onclick="cerrarPerfil()">Cancelar</button>
@@ -402,15 +401,13 @@
         
         if (SpeechRecognition) {
             reconocimiento = new SpeechRecognition();
-            reconocimiento.continuous = true; // CAMBIO CRÍTICO: Mantiene abierto el mic para evitar cortes y duplicaciones
+            reconocimiento.continuous = true; // Evita cortes automáticos bruscos en Android
             reconocimiento.interimResults = true; 
             reconocimiento.lang = 'es-AR';
 
             reconocimiento.onresult = (event) => {
                 let textFinal = '';
                 let textInterim = '';
-                
-                // Recorremos todos los fragmentos desde el inicio de la sesión para armar la frase limpia
                 for (let i = 0; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         textFinal += event.results[i][0].transcript + ' ';
@@ -423,30 +420,26 @@
             };
 
             reconocimiento.onend = () => {
-                // Al cerrarse el reconocimiento de forma segura, procesamos el texto limpio definitivo
                 if (acumuladoFrase.trim()) {
                     procesarTextoFinal(acumuladoFrase);
                 }
                 acumuladoFrase = "";
                 escuchando = false;
                 document.getElementById('btn-grabar').classList.remove('escuchando');
-                document.getElementById('transcripcion-tiempo-real').innerText = "Presioná el micrófono naranja para hablar...";
+                document.getElementById('transcripcion-tiempo-real').innerText = "Presioná el micrófono para hablar...";
             };
         }
 
         function alternarDictado() {
-            if (!reconocimiento) {
-                alert("Este navegador no soporta el reconocimiento de voz nativo.");
-                return;
-            }
+            if (!reconocimiento) return;
             if (!escuchando) {
                 escuchando = true;
                 acumuladoFrase = "";
                 document.getElementById('btn-grabar').classList.add('escuchando');
-                document.getElementById('transcripcion-tiempo-real').innerText = "Escuchando... Hablá ahora de corrido.";
+                document.getElementById('transcripcion-tiempo-real').innerText = "Escuchando... Dictá ahora.";
                 reconocimiento.start();
             } else {
-                reconocimiento.stop(); // Detiene de forma segura y gatilla el flujo limpio en onend
+                reconocimiento.stop(); 
             }
         }
 
@@ -456,10 +449,10 @@
 
             if (pasoActual === 1) {
                 nombreLista = texto;
-                document.getElementById('titulo-lista-actual').innerText = "📋 " + nombreLista.toUpperCase();
+                document.getElementById('titulo-lista-actual').innerText = "📋 LISTA: " + nombreLista.toUpperCase();
                 document.getElementById('titulo-lista-actual').style.display = "block";
                 pasoActual = 2;
-                document.getElementById('indicador-paso').innerText = "Paso 2: Dictá los materiales separados por comas o pausas";
+                document.getElementById('indicador-paso').innerText = "Paso 2: Dictá los materiales";
                 document.getElementById('bloque-manual').style.display = "flex";
             } else if (pasoActual === 2) {
                 let fragmentos = texto.split(/,|\by\b|\btambién\b|\bcon\b/i);
@@ -467,7 +460,6 @@
                     let limpio = f.trim();
                     if (limpio.length > 1) {
                         limpio = limpio.charAt(0).toUpperCase() + limpio.slice(1);
-                        // Evitamos duplicar items idénticos en la misma tanda
                         if(!itemsLista.includes(limpio)) {
                             itemsLista.push(limpio);
                         }
@@ -533,24 +525,24 @@
             }
         }
 
-        /* --- SOLUCIÓN DE RENDIMIENTO PDF DEFINITIVA DESDE MEMORIA DETACHED --- */
+        /* --- GENERACIÓN DEL PDF FIJADO DETRÁS DE LA CAPA VISIBLE (INFALIBLE EN MÓVILES) --- */
         function generarPDF() {
             const datosEmpresaSrc = document.getElementById('datos-cliente-texto').innerHTML;
             const logoSrc = document.getElementById('logo-preview').src;
             
-            // Creamos el nodo del PDF completamente aislado en memoria para saltearnos fallas de layouts del CSS padre
+            // Capa invisible al usuario por Z-Index, pero con existencia y tamaño real para el motor móvil
             const pdfContainer = document.createElement('div');
-            pdfContainer.style.position = 'absolute';
-            pdfContainer.style.left = '-9999px';
+            pdfContainer.style.position = 'fixed';
             pdfContainer.style.top = '0';
-            pdfContainer.style.width = '794px'; // Ancho A4 exacto de renderizado
+            pdfContainer.style.left = '0';
+            pdfContainer.style.width = '800px'; 
+            pdfContainer.style.zIndex = '-1'; 
             pdfContainer.style.backgroundColor = '#FFFFFF';
             pdfContainer.style.color = '#000000';
             pdfContainer.style.padding = '40px';
             pdfContainer.style.boxSizing = 'border-box';
             pdfContainer.style.fontFamily = 'Arial, sans-serif';
 
-            // Armamos el HTML interno con estilos en línea nativos e inalterables
             let itemsHTML = '';
             itemsLista.forEach(item => {
                 itemsHTML += `
@@ -562,13 +554,13 @@
             });
 
             let logoHTML = '';
-            if(logoSrc && !logoSrc.endsWith('listaxvoz.html') && logoSrc.length > 100) {
+            if(logoSrc && !logoSrc.endsWith('index.html') && logoSrc.length > 100) {
                 logoHTML = `<img src="${logoSrc}" style="max-width: 90px; max-height: 90px; object-fit: contain;">`;
             }
 
             pdfContainer.innerHTML = `
-                <div style="background-color: #000000; color: #FFFFFF; padding: 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #FF6B00; margin-bottom: 25px; border-radius: 4px;">
-                    <div style="font-size: 28px; font-weight: bold; letter-spacing: 1px; color: #FFFFFF !important;">PRESU<span style="color: #FF6B00;">XVOZ</span></div>
+                <div style="background-color: #000000; color: #FFFFFF; padding: 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 5px solid #7FFF00; margin-bottom: 25px; border-radius: 4px;">
+                    <div style="font-size: 28px; font-weight: bold; letter-spacing: 1px; color: #FFFFFF !important;">LISTA<span style="color: #7FFF00;">XVOZ</span></div>
                     <div style="font-size: 12px; text-align: right; font-weight: bold; color: #FFFFFF !important;">Documento Comercial de Trabajo</div>
                 </div>
                 
@@ -577,14 +569,13 @@
                     <div>${logoHTML}</div>
                 </div>
 
-                <div style="font-size: 22px; font-weight: bold; color: #000000 !important; margin-bottom: 25px; text-transform: uppercase; border-left: 6px solid #FF6B00; padding-left: 12px;">Lista: ${nombreLista.toUpperCase()}</div>
+                <div style="font-size: 22px; font-weight: bold; color: #000000 !important; margin-bottom: 25px; text-transform: uppercase; border-left: 6px solid #7FFF00; padding-left: 12px;">Lista: ${nombreLista.toUpperCase()}</div>
                 
                 <div style="display: flex; flex-direction: column; width: 100%;">
                     ${itemsHTML}
                 </div>
             `;
             
-            // Lo inyectamos al body vivo para que html2canvas mida correctamente su altura física real
             document.body.appendChild(pdfContainer);
 
             const opciones = {
@@ -595,7 +586,6 @@
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Ejecutamos la descarga y limpiamos la memoria inmediatamente
             html2pdf().set(opciones).from(pdfContainer).save().then(() => {
                 document.body.removeChild(pdfContainer);
             });
@@ -611,7 +601,7 @@
                 document.getElementById('btn-pdf').style.display = "none";
                 document.getElementById('btn-reiniciar').style.display = "none";
                 document.getElementById('bloque-manual').style.display = "none";
-                document.getElementById('indicador-paso').innerText = "Paso 1: Dictá el Nombre del Ambiente o Lista";
+                document.getElementById('indicador-paso').innerText = "Paso 1: Dictá el Nombre de la Lista";
                 acumuladoFrase = "";
             }
         }
