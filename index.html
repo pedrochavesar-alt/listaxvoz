@@ -614,7 +614,7 @@ function makeRecognition(onResult, onEnd) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const rec = new SR();
   rec.lang = 'es-AR';
-  rec.continuous = true;
+  rec.continuous = false;      // false evita duplicación en mobile
   rec.interimResults = true;
   rec.maxAlternatives = 1;
   rec.onresult = onResult;
@@ -623,6 +623,7 @@ function makeRecognition(onResult, onEnd) {
     if (e.error === 'not-allowed') {
       setStatus('❌ Permiso de micrófono revocado. Habilitalo en Ajustes.', false);
     }
+    // no-speech es normal, ignorar
   };
   return rec;
 }
@@ -652,12 +653,9 @@ function initRecognitions() {
       document.getElementById('confirm-name-btn').disabled = !display.trim();
     },
     () => {
-      if (nameListening) {
-        nameResultCount = 0;
-        setTimeout(() => { if (nameListening) try { nameRecognition.start(); } catch(_) {} }, 150);
-      } else {
-        setMicState('name', false);
-      }
+      // continuous=false: no reiniciar, el usuario toca de nuevo si quiere seguir
+      setMicState('name', false);
+      nameListening = false;
     }
   );
 
@@ -682,10 +680,20 @@ function initRecognitions() {
       showTranscript('items-transcript', display || '');
     },
     () => {
+      // continuous=false: cuando termina, agregar lo dictado automáticamente
       if (itemsListening) {
-        // Al reiniciar, resetear el contador para la nueva sesión
-        itemsResultCount = 0;
-        setTimeout(() => { if (itemsListening) try { itemsRecognition.start(); } catch(_) {} }, 150);
+        itemsListening = false;
+        setMicState('items', false);
+        if (itemsText.trim()) {
+          const parsed = parseItems(itemsText.trim());
+          listItems = listItems.concat(parsed);
+          itemsText = '';
+          itemsResultCount = 0;
+          showTranscript('items-transcript', '');
+          renderList();
+          document.getElementById('list-section').classList.add('visible');
+          setStatus('✅ Agregado — tocá el mic para el siguiente ítem', true);
+        }
       } else {
         setMicState('items', false);
       }
@@ -709,28 +717,16 @@ function toggleNameMic() {
 
 function toggleItemsMic() {
   if (itemsListening) {
+    // Detener manualmente — onEnd agrega el texto
     itemsListening = false;
     itemsRecognition.stop();
-    setMicState('items', false);
-    setTimeout(() => {
-      if (itemsText.trim()) {
-        const parsed = parseItems(itemsText.trim());
-        listItems = listItems.concat(parsed);
-        itemsText = '';
-        showTranscript('items-transcript', '');
-        renderList();
-        document.getElementById('list-section').classList.add('visible');
-        setStatus('✅ Agregado — tocá el mic para el siguiente ítem', true);
-      } else {
-        setStatus('No se detectó texto. Intentá de nuevo.', false);
-      }
-    }, 300);
   } else {
     itemsText = '';
+    itemsResultCount = 0;
     showTranscript('items-transcript', '');
     itemsListening = true;
     setMicState('items', true);
-    setStatus('🎤 Escuchando... tocá de nuevo para agregar', true);
+    setStatus('🎤 Escuchando... cuando termines se agrega solo', true);
     try { itemsRecognition.start(); } catch(_) {}
   }
 }
