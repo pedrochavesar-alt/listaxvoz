@@ -631,13 +631,20 @@ function initRecognitions() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
 
+  let nameResultCount = 0;
   nameRecognition = makeRecognition(
     (e) => {
       let final = '', interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += t;
-        else interim += t;
+        if (e.results[i].isFinal) {
+          if (i >= nameResultCount) {
+            final += t;
+            nameResultCount = i + 1;
+          }
+        } else {
+          interim += t;
+        }
       }
       if (final) nameText += final;
       const display = nameText + interim;
@@ -646,6 +653,7 @@ function initRecognitions() {
     },
     () => {
       if (nameListening) {
+        nameResultCount = 0;
         setTimeout(() => { if (nameListening) try { nameRecognition.start(); } catch(_) {} }, 150);
       } else {
         setMicState('name', false);
@@ -653,13 +661,21 @@ function initRecognitions() {
     }
   );
 
+  let itemsResultCount = 0; // tracks how many final results already processed
   itemsRecognition = makeRecognition(
     (e) => {
       let final = '', interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += t;
-        else interim += t;
+        if (e.results[i].isFinal) {
+          // Solo procesar si es un resultado nuevo (no ya acumulado)
+          if (i >= itemsResultCount) {
+            final += t;
+            itemsResultCount = i + 1;
+          }
+        } else {
+          interim += t;
+        }
       }
       if (final) itemsText += final + ' ';
       const display = itemsText + interim;
@@ -667,6 +683,8 @@ function initRecognitions() {
     },
     () => {
       if (itemsListening) {
+        // Al reiniciar, resetear el contador para la nueva sesión
+        itemsResultCount = 0;
         setTimeout(() => { if (itemsListening) try { itemsRecognition.start(); } catch(_) {} }, 150);
       } else {
         setMicState('items', false);
@@ -917,20 +935,73 @@ async function exportPDF() {
 
 </body></html>`;
 
-    // ── Abrir en ventana nueva y disparar print (igual que Presu x Voz) ──
-    const win = window.open('', '_blank');
+    // ── Generar Blob PDF y compartir/previsualizar ──
+    // En celular: navigator.share abre directamente WhatsApp, Mail, etc.
+    // En escritorio: abre vista previa con botón Compartir/Descargar
+
+    const blob = new Blob([html], { type: 'text/html' });
+
+    // Nombre del archivo
+    const safeName = (listName || 'lista')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/ +/g, '_');
+    const fecha2 = new Date().toLocaleDateString('es-AR').replace(/\//g, '-');
+    const fileName = safeName + '_' + fecha2 + '.html';
+
+    // ── CELULAR: usar navigator.share si está disponible ──
+    if (navigator.share && navigator.canShare) {
+      const file = new File([blob], fileName, { type: 'text/html' });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: listName, text: 'Lista de relevamiento' });
+          setStatus('✅ Compartido', true);
+          return;
+        } catch(shareErr) {
+          if (shareErr.name !== 'AbortError') console.warn('share failed:', shareErr);
+        }
+      }
+    }
+
+    // ── ESCRITORIO o fallback: mostrar vista previa con botones ──
+    const previewUrl = URL.createObjectURL(blob);
+    const win = window.open('', '_blank', 'width=800,height=900');
     if (!win) {
-      setStatus('❌ Bloqueado por el navegador. Permitir popups para esta página.', false);
+      // Si bloquea popup, descargar directo
+      const a = document.createElement('a');
+      a.href = previewUrl;
+      a.download = fileName;
+      a.click();
+      setStatus('✅ Descargado', true);
       return;
     }
-    win.document.write(html);
+
+    // Página de preview con botones de compartir/imprimir/descargar
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  body { margin:0; font-family:Arial,sans-serif; background:#111; }
+  .toolbar {
+    position:fixed; bottom:0; left:0; right:0;
+    background:#1a1a1a; border-top:2px solid #7FFF00;
+    padding:12px 20px; display:flex; gap:12px; justify-content:center; z-index:999;
+  }
+  .btn { padding:14px 28px; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; }
+  .btn-green { background:#7FFF00; color:#000; }
+  .btn-outline { background:transparent; color:#7FFF00; border:2px solid #7FFF00; }
+  iframe { width:100%; height:calc(100vh - 70px); border:none; display:block; }
+</style>
+</head><body>
+<iframe src="${previewUrl}"></iframe>
+<div class="toolbar">
+  <button class="btn btn-green" onclick="frames[0].print()">🖨 Imprimir / Guardar PDF</button>
+  <button class="btn btn-outline" onclick="
+    var a=document.createElement('a');
+    a.href='${previewUrl}';
+    a.download='${fileName}';
+    a.click();">⬇ Descargar</button>
+</div>
+</body></html>`);
     win.document.close();
-    win.onload = () => {
-      setTimeout(() => {
-        win.print();
-        setStatus('✅ PDF generado', true);
-      }, 400);
-    };
+    setStatus('✅ Vista previa lista', true);
 
   } catch(err) {
     console.error('Error generando PDF:', err);
