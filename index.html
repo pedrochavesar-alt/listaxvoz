@@ -774,6 +774,11 @@ function confirmName() {
   document.body.classList.add('listing');
   document.getElementById('list-section').classList.add('visible');
   renderList();
+  // Deshabilitar botones brevemente para evitar ghost tap en mobile
+  document.querySelectorAll('.btn').forEach(b => {
+    b.style.pointerEvents = 'none';
+    setTimeout(() => { b.style.pointerEvents = ''; }, 600);
+  });
   setStatus('Tocá el mic y dictá cada ítem', true);
 }
 
@@ -785,22 +790,32 @@ function backToStep1() {
 }
 
 function clearAll() {
-  if (confirm('¿Empezar una lista nueva? Se borrará todo.')) {
-    listName = ''; listItems = []; nameText = ''; itemsText = '';
-    if (nameListening) { nameListening = false; try { nameRecognition.stop(); } catch(_){} }
-    if (itemsListening) { itemsListening = false; try { itemsRecognition.stop(); } catch(_){} }
-    showTranscript('name-transcript', '');
-    showTranscript('items-transcript', '');
-    document.getElementById('confirm-name-btn').disabled = true;
-    setMicState('name', false); setMicState('items', false);
-    document.getElementById('list-section').classList.remove('visible');
-    const step2 = document.getElementById('step2-card');
-    step2.style.display = 'none'; step2.classList.remove('mic-bar');
-    document.body.classList.remove('listing');
-    document.getElementById('step1-card').style.display = 'block';
-    document.getElementById('checklist').innerHTML = '';
-    setStatus('Lista nueva — ingresá el nombre', false);
-  }
+  // Usar modal propio en vez de confirm() para evitar bug de touch en mobile
+  const modal = document.getElementById('confirm-modal');
+  modal.style.display = 'flex';
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').style.display = 'none';
+}
+
+function confirmClearAll() {
+  closeConfirmModal();
+  listName = ''; listItems = []; nameText = ''; itemsText = '';
+  nameResultCount = 0; itemsResultCount = 0;
+  if (nameListening) { nameListening = false; try { nameRecognition.stop(); } catch(_){} }
+  if (itemsListening) { itemsListening = false; try { itemsRecognition.stop(); } catch(_){} }
+  showTranscript('name-transcript', '');
+  showTranscript('items-transcript', '');
+  document.getElementById('confirm-name-btn').disabled = true;
+  setMicState('name', false); setMicState('items', false);
+  document.getElementById('list-section').classList.remove('visible');
+  const step2 = document.getElementById('step2-card');
+  step2.style.display = 'none'; step2.classList.remove('mic-bar');
+  document.body.classList.remove('listing');
+  document.getElementById('step1-card').style.display = 'block';
+  document.getElementById('checklist').innerHTML = '';
+  setStatus('Lista nueva — ingresá el nombre', false);
 }
 
 function parseItems(text) {
@@ -1102,5 +1117,18 @@ document.getElementById('profile-modal').addEventListener('click', function(e) {
   if (e.target === this) closeProfile();
 });
 </script>
+
+<!-- ── CONFIRM MODAL ── -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#1a1a1a;border:1.5px solid #333;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">🗑</div>
+    <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;">¿Nueva lista?</div>
+    <div style="font-size:14px;color:#888;margin-bottom:24px;">Se borrará todo el contenido actual.</div>
+    <div style="display:flex;gap:12px;">
+      <button onclick="closeConfirmModal()" style="flex:1;padding:16px;border-radius:12px;border:2px solid #7FFF00;background:transparent;color:#7FFF00;font-size:16px;font-weight:700;cursor:pointer;">Cancelar</button>
+      <button onclick="confirmClearAll()" style="flex:1;padding:16px;border-radius:12px;border:none;background:#7FFF00;color:#000;font-size:16px;font-weight:700;cursor:pointer;">Borrar todo</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
