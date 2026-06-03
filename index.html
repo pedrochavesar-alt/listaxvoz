@@ -515,9 +515,9 @@
       <div id="list-name-display"></div>
     </div>
     <ul id="checklist"></ul>
-    <button class="btn" id="pdf-btn" onclick="exportPDF()" style="margin-bottom:10px">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      Exportar PDF
+    <button class="btn btn-green" id="pdf-btn" onclick="mostrarPreview()" style="margin-bottom:10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Ver y Compartir Lista
     </button>
 
     <button class="btn btn-outline" onclick="clearAll()">🗑 Nueva lista</button>
@@ -578,6 +578,8 @@ let nameText = '';
 let itemsText = '';
 let profile = JSON.parse(localStorage.getItem('lxv_profile') || '{}');
 let logoDataURL = localStorage.getItem('lxv_logo') || '';
+let nameResultCount = 0;
+let itemsResultCount = 0;
 
 /* ─── INIT ─── */
 window.addEventListener('load', () => {
@@ -632,7 +634,6 @@ function initRecognitions() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
 
-  let nameResultCount = 0;
   nameRecognition = makeRecognition(
     (e) => {
       let final = '', interim = '';
@@ -659,7 +660,6 @@ function initRecognitions() {
     }
   );
 
-  let itemsResultCount = 0; // tracks how many final results already processed
   itemsRecognition = makeRecognition(
     (e) => {
       let final = '', interim = '';
@@ -803,8 +803,11 @@ function confirmClearAll() {
   closeConfirmModal();
   listName = ''; listItems = []; nameText = ''; itemsText = '';
   nameResultCount = 0; itemsResultCount = 0;
-  if (nameListening) { nameListening = false; try { nameRecognition.stop(); } catch(_){} }
-  if (itemsListening) { itemsListening = false; try { itemsRecognition.stop(); } catch(_){} }
+  nameListening = false; itemsListening = false;
+  try { nameRecognition.stop(); } catch(_){}
+  try { itemsRecognition.stop(); } catch(_){}
+  // Recrear instancias limpias para evitar estado corrupto
+  initRecognitions();
   showTranscript('name-transcript', '');
   showTranscript('items-transcript', '');
   document.getElementById('confirm-name-btn').disabled = true;
@@ -852,13 +855,63 @@ function renderList() {
 
 
 
-/* ─── EXPORT PDF — usando HTML+print (igual que Presu x Voz) ─── */
-async function exportPDF() {
-  if (!listItems.length) { setStatus('No hay ítems para exportar', false); return; }
-  setStatus('⏳ Generando PDF...', true);
+/* ─── PREVIEW + COMPARTIR ─── */
+let _lastHtml = '';
+let _lastFileName = '';
 
-  try {
-    const fecha = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+function mostrarPreview() {
+  if (!listItems.length) { setStatus('No hay ítems para mostrar', false); return; }
+  const html = buildListaHTML();
+  const fecha = new Date().toLocaleDateString('es-AR').replace(/\//g, '-');
+  const safeName = (listName || 'lista')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/ +/g, '_');
+  _lastFileName = safeName + '_' + fecha + '.html';
+  _lastHtml = html;
+
+  const iframe = document.getElementById('preview-iframe');
+  iframe.srcdoc = html;
+  document.getElementById('preview-modal').style.display = 'flex';
+}
+
+function cerrarPreview() {
+  document.getElementById('preview-modal').style.display = 'none';
+}
+
+async function compartirLista() {
+  const blob = new Blob([_lastHtml], { type: 'text/html' });
+  const file = new File([blob], _lastFileName, { type: 'text/html' });
+
+  // Celular: share nativo
+  if (navigator.share) {
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: listName, text: 'Lista de relevamiento' });
+      } else {
+        await navigator.share({ title: listName, text: buildTextoPlano() });
+      }
+      setStatus('✅ Compartido', true);
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  // Desktop fallback: imprimir
+  const iframe = document.getElementById('preview-iframe');
+  iframe.contentWindow.print();
+}
+
+function buildTextoPlano() {
+  let txt = listName + '\n';
+  if (profile.name) txt += profile.name + '\n';
+  txt += '\n';
+  listItems.forEach((item, i) => { txt += (i+1) + '. ' + item + '\n'; });
+  return txt;
+}
+
+/* ─── BUILD HTML ─── */
+function buildListaHTML() {
+  const fecha = new Date().toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
 
     // ── Logo como <img> directo (igual que Presu x Voz) ──
     const logoImg = logoDataURL
@@ -946,6 +999,15 @@ async function exportPDF() {
 
 </body></html>`;
 
+  return html;
+}
+
+async function exportPDF() {
+  mostrarPreview();
+}
+
+// legacy - kept for reference
+async function _exportPDFOld() {
     // ── Generar Blob PDF y compartir/previsualizar ──
     // En celular: navigator.share abre directamente WhatsApp, Mail, etc.
     // En escritorio: abre vista previa con botón Compartir/Descargar
@@ -1014,10 +1076,7 @@ async function exportPDF() {
     win.document.close();
     setStatus('✅ Vista previa lista', true);
 
-  } catch(err) {
-    console.error('Error generando PDF:', err);
-    setStatus('❌ Error al generar PDF: ' + err.message, false);
-  }
+  // } catch(err) { console.error(err); }
 }
 
 function setStatus(msg, active) {
@@ -1117,6 +1176,25 @@ document.getElementById('profile-modal').addEventListener('click', function(e) {
   if (e.target === this) closeProfile();
 });
 </script>
+
+<!-- ── PREVIEW MODAL ── -->
+<div id="preview-modal" style="display:none;position:fixed;inset:0;z-index:150;background:#111;flex-direction:column;">
+  <!-- toolbar top -->
+  <div style="background:#000;border-bottom:2px solid #7FFF00;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#7FFF00;letter-spacing:2px;">Vista Previa</div>
+    <button onclick="cerrarPreview()" style="background:transparent;border:none;color:#888;font-size:28px;cursor:pointer;padding:4px 8px;">✕</button>
+  </div>
+  <!-- preview iframe -->
+  <iframe id="preview-iframe" style="flex:1;border:none;background:#fff;" src="about:blank"></iframe>
+  <!-- toolbar bottom -->
+  <div style="background:#000;border-top:2px solid #7FFF00;padding:14px 16px;display:flex;gap:12px;flex-shrink:0;">
+    <button onclick="compartirLista()" style="flex:1;padding:16px;border-radius:12px;border:none;background:#7FFF00;color:#000;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Compartir
+    </button>
+    <button onclick="cerrarPreview()" style="padding:16px 20px;border-radius:12px;border:2px solid #7FFF00;background:transparent;color:#7FFF00;font-size:17px;font-weight:700;cursor:pointer;">Volver</button>
+  </div>
+</div>
 
 <!-- ── CONFIRM MODAL ── -->
 <div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px;">
